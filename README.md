@@ -6,9 +6,9 @@
 
 | Thành viên              | Vai trò                        | Branch  |
 | ----------------------- | ------------------------------ | ------- |
-| Mai Viết Thành          | SV1 — RAG & chất lượng trả lời | `thanh` |
-| Lê Huy Phát             | SV2 — Agent loop               | `phat`  |
-| Nguyễn Huỳnh Minh Tuyết | SV3 — Dữ liệu log & MCP server | `tuyet` |
+| Nguyễn Huỳnh Minh Tuyết | SV1 — RAG & chất lượng trả lời | `tuyet` |
+| Mai Viết Thành          | SV2 — Agent loop               | `thanh` |
+| Lê Huy Phát             | SV3 — Dữ liệu log & MCP server | `phat`  |
 
 **Thời gian:** Thứ 7 10/10/2026 → Thứ 2 19/10/2026 (10 ngày)
 
