@@ -1,7 +1,9 @@
 import time, sys, os, json, urllib.request
 from pathlib import Path
 from dotenv import load_dotenv
+import truststore
 
+truststore.inject_into_ssl()
 _HERE = Path(__file__).resolve().parent
 load_dotenv(_HERE.parents[1] / ".env")      # 1. nạp .env TRƯỚC
 
