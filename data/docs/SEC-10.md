@@ -13,7 +13,7 @@ Tài liệu này quy định cách đội SOC phát hiện và xử lý tài kho
 
 ## 2. Dấu hiệu tài khoản bị chiếm
 
-Một tài khoản được coi là có dấu hiệu bị chiếm khi có từ 5 lần đăng nhập thất bại trở lên trong vòng 15 phút, sau đó có một lần đăng nhập thành công vào chính tài khoản đó từ cùng địa chỉ IP với các lần thất bại.
+Một tài khoản được coi là có dấu hiệu bị chiếm khi có từ 3 đến 4 lần đăng nhập thất bại liên tiếp trong 15 phút (chưa chạm ngưỡng khoá 5 lần của SEC-07), sau đó có một lần đăng nhập thành công vào chính tài khoản đó từ cùng địa chỉ IP với các lần thất bại.
 
 Đăng nhập thành công từ một IP khác với các lần thất bại không được coi là dấu hiệu bị chiếm theo tài liệu này.
 
