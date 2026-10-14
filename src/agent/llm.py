@@ -32,7 +32,7 @@ def _post(body): # Lấy text và usage sd trong call llm
     
 
 def call_llm(messages, retries=3):
-    body = {"model": MODEL, "messages": messages, "temperature": 0, "max_tokens": 512}
+    body = {"model": MODEL, "messages": messages, "temperature": 0, "max_tokens": 2048} # Tăng max token vì model llm này cần suy luận
     for i in range(retries):
         try:
             return _post(body)  # thành công thì xuất ra terminal luôn

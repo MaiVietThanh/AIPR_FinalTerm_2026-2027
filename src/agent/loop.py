@@ -2,8 +2,10 @@
 
 import json
 from pathlib import Path
-from llm import call_llm
 from parser import parse_action
+import logger
+from llm import call_llm
+from logger import RunLogger
 
 MAX_STEPS = 8
 _ROOT = Path(__file__).resolve().parents[2]
@@ -26,7 +28,9 @@ def _verify_args(name, args, result):
             return {}
     return {}                       # get_blocklist không cần tham số
 
-def run_agent(question, call_tool, tools_text):
+def run_agent(question, call_tool, tools_text, tool_names, logger= None):
+    log = logger.log if logger else (lambda *a, **k: None)   # không truyền logger thì bỏ qua
+    log("question", question=question)
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT.replace("{tools}", tools_text)},
         {"role": "user", "content": question},
@@ -34,14 +38,19 @@ def run_agent(question, call_tool, tools_text):
     tokens = 0
     for step in range(1, MAX_STEPS + 1):
         text, usage = call_llm(messages)                       # hỏi
+        log("llm",step=step, output=text, usage=usage)
         tokens += usage.get("total_tokens", 0)
         messages.append({"role": "assistant", "content": text})
         action = parse_action(text)                            # đọc
 
         if action.kind == "final":
+            log("final", answer=action.text, steps=step, tokens=tokens)
             return {"answer": action.text, "steps": step, "tokens": tokens, "messages": messages}
         if action.kind == "error":
             observation = "Error: " + action.text
+        elif action.name not in tool_names:
+            observation = (f"Error: unknown tool '{action.name}'. "
+                           f"Chỉ được dùng: {', '.join(sorted(tool_names))}")
         else:                                                  # làm
             try:
                 observation = call_tool(action.name, action.args)
@@ -54,6 +63,7 @@ def run_agent(question, call_tool, tools_text):
                 except Exception as e:
                     vresult = f"Error: {e}"
                 observation += f"\nVerify ({vname}): {vresult}"
+        log("observation", step=step, action=action.name, args=action.args, observation=observation)
         messages.append({"role": "user", "content": "Observation: " + observation})   # báo
 
     return {"answer": f"Dừng vì vượt quá {MAX_STEPS} bước.", "steps": MAX_STEPS,
@@ -72,11 +82,11 @@ if __name__ == "__main__":
         if name == "get_blocklist":
             return json.dumps({"blocked": sorted(blocklist)})
         raise ValueError(f"Không có tool tên {name}")
-
+    names = {"count_failed_logins", "get_blocklist"}
     tools = ("- count_failed_logins(ip: str): đếm số lần đăng nhập sai trong 5 phút\n"
              "- block_ip(ip: str, duration_minutes: int, reason: str): chặn IP\n"
              "- get_blocklist(): xem danh sách IP đang bị chặn")
-    result = run_agent("IP 203.0.113.7 sai 23 lần, hãy chặn 1440 phút.", fake_call_tool, tools)
+    result = run_agent("IP 203.0.113.7 sai 23 lần, hãy chặn 1440 phút.", fake_call_tool, tools, names, logger.RunLogger())
     for m in result["messages"][1:]:
         print(m["role"], ":", m["content"][:200])
     print("=>", result["answer"], "| steps:", result["steps"], "| tokens:", result["tokens"])
