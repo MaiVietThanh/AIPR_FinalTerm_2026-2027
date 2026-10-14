@@ -1,0 +1,3 @@
+{"ts": "2026-10-14T14:41:04", "event": "question", "question": "IP 203.0.113.7 sai 23 lần, hãy chặn 1440 phút."}
+{"ts": "2026-10-14T14:41:06", "event": "llm", "step": 1, "output": "{\"thought\":\"Không tìm thấy trong tài liệu\",\"final_answer\":\"Không tìm thấy trong tài liệu\"}", "usage": {"queue_time": 0.33862777, "prompt_tokens": 586, "prompt_time": 0.068690525, "completion_tokens": 532, "completion_time": 0.578633905, "total_tokens": 1118, "total_time": 0.64732443, "completion_tokens_details": {"reasoning_tokens": 503}}}
+{"ts": "2026-10-14T14:41:06", "event": "final", "answer": "Không tìm thấy trong tài liệu", "steps": 1, "tokens": 1118}
