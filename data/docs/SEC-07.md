@@ -21,7 +21,7 @@ Một sự việc có thể kích hoạt cả hai biện pháp, ví dụ một I
 
 ## 3. Ngưỡng khoá tài khoản
 
-Tài khoản bị khoá tạm thời khi có 5 lần đăng nhập sai liên tiếp trong vòng 15 phút. Bộ đếm được đặt lại về 0 khi đăng nhập thành công hoặc sau 15 phút không có lần sai nào.
+Tài khoản bị khoá tạm thời khi có 5 lần đăng nhập thất bại liên tiếp trong vòng 15 phút. Bộ đếm được đặt lại về 0 khi đăng nhập thành công hoặc sau 15 phút không có lần sai nào.
 
 ## 4. Thời gian khoá
 
