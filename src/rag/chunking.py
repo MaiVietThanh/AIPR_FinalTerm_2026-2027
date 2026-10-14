@@ -135,13 +135,15 @@ def chunk_by_section(doc: Document) -> list[DocumentChunk]:
 
 
 def chunk_all(docs_dir: str = DOCS_DIR) -> list[DocumentChunk]:
+    all_chunks = []
+    for path in sorted(Path(DOCS_DIR).glob("*.md")):
+        doc = load_document (path)
+        chunks = chunk_by_section(doc)
+        all_chunks.extend(chunks)
+
+    return all_chunks
    
-    pass
 
 if __name__ == "__main__":
-    doc = load_document("data/docs/SEC-02.md")
-    chunks = chunk_by_section(doc)
-    print(len(chunks))                            # mong đợi: 8
-    print(chunks[0].content[:150])                # đầu đề + tiêu đề + đầu nội dung
-    for c in chunks:
-        print(c.chunk_id, "|", c.metadata["section"])
+    chunks = chunk_all()
+   
