@@ -74,29 +74,74 @@ def parse_front_matter(text: str) -> tuple[dict, str]:
     return meta, parts[2]
         
 
-
-
-
 def load_document(path: str | Path) -> Document:
+    text = Path(path).read_text(encoding="utf-8")
+    meta, body = parse_front_matter(text)
+    return Document (
+        content= body,
+        doc_id = meta["doc_id"],
+        title= meta["title"],
+        source= str(path),
+        metadata= meta,
+    )
 
-    pass
+
+    
 
 
 def split_sections(body: str) -> list[tuple[str, str]]:
+    """Cắt thân bài thành danh sách (tiêu đề mục, nội dung mục)."""
+    sections = []
+    heading = None 
+    lines = []
 
-    pass
+    for line in body.splitlines(): 
+        if line.startswith("## "):
+            if heading is not None: 
+                content = "\n".join(lines).strip()
+                sections.append((heading,content))
+            heading = line.strip()
+            lines = []
+        else:
+            lines.append(line)
+
+    if heading is not None: 
+        content = "\n".join(lines).strip()
+        sections.append((heading, content))
+
+    return sections
+
+
 
 
 def chunk_by_section(doc: Document) -> list[DocumentChunk]:
+    chunks = []
+    for heading, text in split_sections (doc.content) :
+        if any(s in heading for s in SKIP_SECTIONS):
+            continue
 
-    pass
+        header = f"[{doc.doc_id} v{doc.metadata['version']} — {doc.title}]"
+        chunks.append(
+            DocumentChunk(
+                content= header + "\n" + heading + "\n" + text,
+                chunk_id = f"{doc.doc_id}#{len(chunks)}"  ,
+                doc_id = doc.doc_id,
+                chunk_index= len(chunks),
+                metadata={**doc.metadata, "section": heading},
+            )
+        )
+
+    return chunks
 
 
 def chunk_all(docs_dir: str = DOCS_DIR) -> list[DocumentChunk]:
    
     pass
 
-
 if __name__ == "__main__":
-    chunks = chunk_all()
- 
+    doc = load_document("data/docs/SEC-02.md")
+    chunks = chunk_by_section(doc)
+    print(len(chunks))                            # mong đợi: 8
+    print(chunks[0].content[:150])                # đầu đề + tiêu đề + đầu nội dung
+    for c in chunks:
+        print(c.chunk_id, "|", c.metadata["section"])
