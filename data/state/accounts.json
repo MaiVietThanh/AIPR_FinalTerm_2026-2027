@@ -1,0 +1,72 @@
+[
+  {
+    "username": "thanh",
+    "is_admin": false,
+    "locked": false,
+    "locked_until": null,
+    "reason": null
+  },
+  {
+    "username": "tuyet",
+    "is_admin": false,
+    "locked": false,
+    "locked_until": null,
+    "reason": null
+  },
+  {
+    "username": "trung",
+    "is_admin": false,
+    "locked": false,
+    "locked_until": null,
+    "reason": null
+  },
+  {
+    "username": "phat",
+    "is_admin": false,
+    "locked": false,
+    "locked_until": null,
+    "reason": null
+  },
+  {
+    "username": "tabi",
+    "is_admin": false,
+    "locked": false,
+    "locked_until": null,
+    "reason": null
+  },
+  {
+    "username": "tuananh",
+    "is_admin": false,
+    "locked": false,
+    "locked_until": null,
+    "reason": null
+  },
+  {
+    "username": "kiet",
+    "is_admin": false,
+    "locked": false,
+    "locked_until": null,
+    "reason": null
+  },
+  {
+    "username": "hai",
+    "is_admin": false,
+    "locked": false,
+    "locked_until": null,
+    "reason": null
+  },
+  {
+    "username": "admin",
+    "is_admin": true,
+    "locked": false,
+    "locked_until": null,
+    "reason": null
+  },
+  {
+    "username": "root",
+    "is_admin": true,
+    "locked": false,
+    "locked_until": null,
+    "reason": null
+  }
+]
