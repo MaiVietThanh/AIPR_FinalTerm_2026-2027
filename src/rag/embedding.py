@@ -4,14 +4,16 @@ import numpy as np
 import time 
 import random
 import hashlib
+import json
 from dotenv import load_dotenv
-
+from chunking import chunk_all
 load_dotenv()
 
 JINA_URL = "https://api.jina.ai/v1/embeddings"
 MODEL_NAME = "jina-embeddings-v3"
 TASK_PASSAGE = "retrieval.passage"             # dùng khi embed chunk, tài liệu mẫu
 TASK_QUERY = "retrieval.query"                 # dùng khi embed câu hỏi, câu hỏi người dùng
+INDEX_DIR = "data/index"
 
 def _post_jina (texts: list[str], task: str, timeout: int =60) -> list[list[float]]:
     api_key = os.getenv("JINA_API_KEY")
@@ -84,14 +86,47 @@ def compute_index_hash (chunks: list) -> str:
         h.update(f"{c.chunk_id}\n{c.content}\n".encode("utf-8"))
     return h.hexdigest()
 
-if __name__ == "__main__":
-    from chunking import chunk_all
+# AI hỗ trợ
+def save_index(matrix: np.ndarray, chunks: list, index_hash: str, index_dir: str = INDEX_DIR) -> None:
+    os.makedirs(index_dir, exist_ok=True)                                # tạo data/index nếu chưa có, có rồi thì bỏ qua
+    np.save(os.path.join(index_dir, "embeddings.npy"), matrix)           # lưu ma trận (57, 1024) dạng nhị phân
+    meta = {
+        "hash": index_hash,                                              # dấu vân tay của bộ chunk lúc embed
+        "model": MODEL_NAME,                                             # để người đọc file biết dùng model nào
+        "task": TASK_PASSAGE,                                            # để người đọc file biết dùng task nào
+        "chunk_ids": [c.chunk_id for c in chunks],                       # hàng i trong .npy ứng với chunk_ids[i]
+    }
+    with open(os.path.join(index_dir, "meta.json"), "w", encoding="utf-8") as f:   # mở file để GHI
+        json.dump(meta, f, ensure_ascii=False, indent=2)                 # ghi dict ra JSON, giữ nguyên tiếng Việt
 
-    chunks = chunk_all("data/docs")
-    h1 = compute_index_hash(chunks)
-    h2 = compute_index_hash(chunk_all("data/docs"))   # đọc lại từ đầu
-    print(h1[:16], len(h1))                           # 16 ký tự đầu, tổng độ dài
-    print(h1 == h2)                                   # cùng nội dung → phải True
+# AI hỗ trợ
+def load_index(index_dir: str = INDEX_DIR):
+    npy_path = os.path.join(index_dir, "embeddings.npy")                 # đường dẫn file ma trận
+    meta_path = os.path.join(index_dir, "meta.json")                     # đường dẫn file meta
+    if not (os.path.exists(npy_path) and os.path.exists(meta_path)):     # thiếu 1 trong 2 file
+        return None                                                      # nghĩa là chưa có cache
+    matrix = np.load(npy_path)                                           # đọc lại ma trận
+    with open(meta_path, "r", encoding="utf-8") as f:                    # mở file để ĐỌC
+        meta = json.load(f)                                              # JSON → dict
+    return matrix, meta                                                  # trả về tuple 2 phần tử
 
-    chunks[10].content += " "                         # lén thêm 1 dấu cách vào chunk thứ 10
-    print(compute_index_hash(chunks) == h1)           # phải False
+
+def load_or_build_index(docs_dir: str = "data/docs", index_dir: str = INDEX_DIR,
+                        force: bool = False) -> tuple[list, np.ndarray]:
+    chunks = chunk_all(docs_dir)                                         # luôn chunk lại từ playbook (nhanh, không tốn API)
+    current_hash = compute_index_hash(chunks)                            # hash của playbook HIỆN TẠI
+
+    cached = None if force else load_index(index_dir)                    # force=True → bỏ qua cache, bắt build lại
+    if cached is not None:                                               # có cache trên đĩa
+        matrix, meta = cached                                            # tách tuple
+        if meta["hash"] == current_hash and matrix.shape[0] == len(chunks):   # hash khớp VÀ số hàng khớp
+            for i, c in enumerate(chunks):
+                c.embedding = matrix[i]                                  # gắn lại vector cho từng chunk
+            print(f"[embedding] Dùng cache: {len(chunks)} chunk, không gọi API")
+            return chunks, matrix                                        # xong, thoát sớm
+        print("[embedding] Playbook hoặc model đã đổi → embed lại")      # có cache nhưng đã cũ
+
+    matrix = embed_chunks(chunks)                                        # gọi Jina (57 chunk → 2 lần gọi)
+    save_index(matrix, chunks, current_hash, index_dir)                  # lưu cho lần sau
+    print(f"[embedding] Đã build và lưu index: {matrix.shape}")
+    return chunks, matrix
