@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-DOCS_DIR = "data/docs"
+DOCS_DIR = Path(__file__).resolve().parents[2] / "data" / "docs"   # đường dẫn tuyệt đối: chạy từ thư mục nào cũng đúng
 SKIP_SECTIONS = ("Tham khảo", "Lịch sử thay đổi")
 
 @dataclass
@@ -14,7 +14,7 @@ class Document:
     title: str = ""
     source: str = ""
     metadata: dict = field(default_factory=dict)
-    created_at: Optional[datetime] = field(default_factory=dict)
+    created_at: Optional[datetime] = None
 
 @dataclass 
 class DocumentChunk: 
@@ -135,9 +135,9 @@ def chunk_by_section(doc: Document) -> list[DocumentChunk]:
 
     return chunks
 
-def chunk_all(docs_dir: str = DOCS_DIR) -> list[DocumentChunk]:
+def chunk_all(docs_dir: str | Path = DOCS_DIR) -> list[DocumentChunk]:
     all_chunks = []
-    for path in sorted(Path(DOCS_DIR).glob("*.md")):
+    for path in sorted(Path(docs_dir).glob("*.md")):
         doc = load_document (path)
         chunks = chunk_by_section(doc)
         all_chunks.extend(chunks)
@@ -146,4 +146,4 @@ def chunk_all(docs_dir: str = DOCS_DIR) -> list[DocumentChunk]:
 
 if __name__ == "__main__":
     chunks = chunk_all()
-   
+   

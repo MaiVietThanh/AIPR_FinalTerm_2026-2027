@@ -133,6 +133,8 @@ Lỗi: IP không có trong danh sách chặn.
 ### 4.3 `create_incident`
 Tạo một sự cố mới trong `incidents.json`. Mã sự cố tự sinh tăng dần: `INC-0001`, `INC-0002`...
 
+Nếu IP đã có sự cố đang `open` hoặc `escalated` thì không tạo thêm mà trả về `status: "already_exists"` kèm sự cố cũ (mỗi IP chỉ 1 sự cố đang mở).
+
 | Tham số | Kiểu | Mặc định | Ý nghĩa |
 |---|---|---|---|
 | `ip` | str | (bắt buộc) | IP liên quan |

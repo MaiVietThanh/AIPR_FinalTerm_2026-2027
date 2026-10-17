@@ -3,14 +3,13 @@
 import json
 from pathlib import Path
 from parser import parse_action
-import logger
 from llm import call_llm
 from logger import RunLogger
 
 MAX_STEPS = 10
 MAX_OBS = 2000
 _ROOT = Path(__file__).resolve().parents[2]
-SYSTEM_PROMPT = (_ROOT / "prompts" / "system.txt").read_text(encoding="utf-8") # promt đang trống nên bỏ qua
+SYSTEM_PROMPT = (_ROOT / "prompts" / "system.txt").read_text(encoding="utf-8")
 
 VERIFY_TOOL = {                     # tool ghi -> tool đọc để kiểm chứng
     "block_ip": "get_blocklist",
@@ -76,6 +75,8 @@ def run_agent(question, call_tool, tools_text, tool_names, logger= None):
                 observation = call_tool(action.name, action.args)
             except Exception as e:
                 observation = f"Error: {e}"                   # tool lỗi -> chuỗi, không raise
+            if not isinstance(observation, str):            # phòng khi call_tool trả về dict
+                observation = json.dumps(observation, ensure_ascii=False)
             if action.name in VERIFY_TOOL and not observation.startswith("Error"):
                 vname = VERIFY_TOOL[action.name]
                 try:
@@ -113,7 +114,7 @@ if __name__ == "__main__":
     tools = ("- count_failed_logins(ip: str): đếm số lần đăng nhập sai trong 5 phút\n"
              "- block_ip(ip: str, duration_minutes: int, reason: str): chặn IP\n"
              "- get_blocklist(): xem danh sách IP đang bị chặn")
-    result = run_agent("IP 203.0.113.7 sai 23 lần, hãy chặn 1440 phút.", fake_call_tool, tools, names, logger.RunLogger())
+    result = run_agent("IP 203.0.113.7 sai 23 lần, hãy chặn 1440 phút.", fake_call_tool, tools, names, RunLogger())
     for m in result["messages"][1:]:
         print(m["role"], ":", m["content"][:200])
-    print("=>", result["answer"], "| steps:", result["steps"], "| tokens:", result["tokens"])
+    print("=>", result["answer"], "| steps:", result["steps"], "| tokens:", result["tokens"])

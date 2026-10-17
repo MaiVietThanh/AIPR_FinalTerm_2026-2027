@@ -19,11 +19,13 @@ class MCPClient:
         self._loop = asyncio.new_event_loop()
         threading.Thread(target=self._loop.run_forever, daemon=True).start()
         self._ready = threading.Event()
+        self.session = None                              # đặt TRƯỚC khi chạy _serve để không ghi đè session thật
         self._main = asyncio.run_coroutine_threadsafe(self._serve(), self._loop)
         if not self._ready.wait(timeout=120):            # chờ server khởi động (nạp RAG hơi lâu)
-            raise RuntimeError("MCP server không khởi động được")
-        if self._main.done():                            # server chết ngay lúc khởi động
-            self._main.result()
+            raise RuntimeError("MCP server không khởi động được (quá 120 giây)")
+        if self.session is None:                         # server chết ngay lúc khởi động
+            self._main.result(timeout=10)                # ném lại lỗi thật cho người dùng thấy
+            raise RuntimeError("MCP server dừng ngay khi khởi động, xem log ở stderr")
 
     async def _serve(self):
         # Mở kết nối và GIỮ nó trong 1 coroutine duy nhất đến khi close().
@@ -78,12 +80,16 @@ class MCPClient:
         return text
 
     def close(self):
-        self._loop.call_soon_threadsafe(self._stop.set)
-        self._main.result(timeout=30)
+        if getattr(self, "_stop", None) is not None:     # chỉ có _stop khi đã kết nối được
+            self._loop.call_soon_threadsafe(self._stop.set)
+            try:
+                self._main.result(timeout=30)
+            except Exception as e:                       # server đã chết thì cũng đóng nốt, không ném lỗi lúc thoát
+                print(f"[mcp] lỗi khi đóng server: {e!r}", file=sys.stderr)
         self._loop.call_soon_threadsafe(self._loop.stop)
 
     def __enter__(self):
         return self
 
     def __exit__(self, *exc):
-        self.close()
+        self.close()

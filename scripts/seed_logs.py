@@ -1,9 +1,11 @@
 import csv
-from datetime import datetime, timedelta
+import sys
+from datetime import timedelta
 from pathlib import Path
 
-NOW = datetime(2026, 10, 1, 10, 0, 0)
-OUT = Path(__file__).resolve().parents[1] / "data" / "auth_logs" / "auth_logs.csv"
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+from config import LOG_FILE as OUT, NOW     # dùng chung mốc giờ với các tool, tránh lệch nếu sửa 1 chỗ
 rows = []
 
 def add(ip, user, success, seconds_ago, service="ssh"):
@@ -49,4 +51,4 @@ with open(OUT, "w", newline="", encoding="utf-8") as f:
     w = csv.DictWriter(f, fieldnames=["ts", "src_ip", "username", "service", "success"])
     w.writeheader()
     w.writerows(rows)
-print(f"Đã ghi {len(rows)} dòng vào {OUT}")
+print(f"Đã ghi {len(rows)} dòng vào {OUT}")

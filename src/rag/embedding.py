@@ -7,14 +7,15 @@ import random
 import hashlib
 import json
 from dotenv import load_dotenv
-from chunking import chunk_all
+from pathlib import Path
+from chunking import DOCS_DIR, chunk_all
 load_dotenv()
 
 JINA_URL = "https://api.jina.ai/v1/embeddings"
 MODEL_NAME = "jina-embeddings-v3"
 TASK_PASSAGE = "retrieval.passage"             # dùng khi embed chunk, tài liệu mẫu
 TASK_QUERY = "retrieval.query"                 # dùng khi embed câu hỏi, câu hỏi người dùng
-INDEX_DIR = "data/index"
+INDEX_DIR = Path(__file__).resolve().parents[2] / "data" / "index"   # tuyệt đối, không phụ thuộc thư mục đang đứng
 
 def _post_jina (texts: list[str], task: str, timeout: int =60) -> list[list[float]]:
     api_key = os.getenv("JINA_API_KEY")
@@ -112,7 +113,7 @@ def load_index(index_dir: str = INDEX_DIR):
     return matrix, meta                                                  # trả về tuple 2 phần tử
 
 
-def load_or_build_index(docs_dir: str = "data/docs", index_dir: str = INDEX_DIR,
+def load_or_build_index(docs_dir: str = DOCS_DIR, index_dir: str = INDEX_DIR,
                         force: bool = False) -> tuple[list, np.ndarray]:
     chunks = chunk_all(docs_dir)                                         # luôn chunk lại từ playbook (nhanh, không tốn API)
     current_hash = compute_index_hash(chunks)                            # hash của playbook HIỆN TẠI

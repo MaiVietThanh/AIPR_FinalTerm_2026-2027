@@ -1,6 +1,6 @@
 # file gọi tool
 
-import copy, csv, json, sys
+import copy, csv, json, sys, time
 from datetime import datetime
 from pathlib import Path
 
@@ -46,7 +46,14 @@ def write_state(name, data):
     tmp = path.with_suffix(".tmp")
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-    tmp.replace(path)          # ghi xong hết mới thay file cũ
+    for attempt in range(5):   # ghi xong hết mới thay file cũ
+        try:
+            tmp.replace(path)
+            return
+        except PermissionError:   # Windows: OneDrive/antivirus đang giữ file trong tích tắc -> chờ rồi thử lại
+            if attempt == 4:
+                raise
+            time.sleep(0.2 * (attempt + 1))
 
 def reset_state():
     STATE_DIR.mkdir(parents=True, exist_ok=True)
@@ -63,4 +70,4 @@ if __name__ == "__main__":
     write_state("blocklist", bl)
     print("Sau khi thêm:", read_state("blocklist"))
     reset_state()
-    print("Sau reset:", read_state("blocklist"), "| số tài khoản:", len(read_state("accounts")))
+    print("Sau reset:", read_state("blocklist"), "| số tài khoản:", len(read_state("accounts")))

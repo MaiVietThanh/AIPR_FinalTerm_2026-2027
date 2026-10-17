@@ -108,7 +108,7 @@ class UnblockResult(TypedDict):
 
 
 class CreateIncidentResult(TypedDict):
-    status: str                # created
+    status: str                # created | already_exists (IP đã có sự cố đang mở)
     incident_id: str
     incident: Incident
 
