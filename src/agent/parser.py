@@ -1,3 +1,5 @@
+# Đọc câu trả lời của LLM và đổi thành Action: gọi tool, trả lời cuối, hoặc lỗi định dạng.
+# Model phải trả 1 object JSON: {"action": tên tool, "args": {...}} hoặc {"final_answer": "..."}.
 import json
 from dataclasses import dataclass, field
 
@@ -9,6 +11,7 @@ class Action:
     text: str = ""                             # câu trả lời cuối hoặc thông báo lỗi
 
 def _extract_json(text: str):
+    # Lấy object JSON đầu tiên trong text; model quên đóng ngoặc } thì thử vá rồi đọc lại
     start = text.find("{")                     # thao tác bỏ qua mọi chữ đứng trước {
     if start == -1:
         return None
@@ -22,6 +25,7 @@ def _extract_json(text: str):
     return None
 
 def parse_action(text: str) -> Action:
+    # JSON hợp lệ -> Action tương ứng; sai định dạng -> Action("error") để loop báo model sửa lại
     obj = _extract_json(text)
     if not isinstance(obj, dict):
         return Action("error", text="Không đọc được JSON. Hãy trả lời đúng 1 object JSON.")

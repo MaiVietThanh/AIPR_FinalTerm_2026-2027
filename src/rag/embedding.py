@@ -1,3 +1,5 @@
+# Nhúng (embedding) chunk và câu hỏi bằng Jina API, chuẩn hoá vector về độ dài 1,
+# và lưu cache index vào data/index (embeddings.npy + meta.json) để lần sau không phải gọi API lại.
 import os 
 import sys
 import requests
@@ -18,6 +20,7 @@ TASK_QUERY = "retrieval.query"                 # dùng khi embed câu hỏi, câ
 INDEX_DIR = Path(__file__).resolve().parents[2] / "data" / "index"   # tuyệt đối, không phụ thuộc thư mục đang đứng
 
 def _post_jina (texts: list[str], task: str, timeout: int =60) -> list[list[float]]:
+    # Gọi Jina 1 lần cho 1 lô text, trả về list vector theo đúng thứ tự đầu vào
     api_key = os.getenv("JINA_API_KEY")
     if not api_key:
         raise ValueError("Thiếu JINA_API_KEY trong file .env")
@@ -40,6 +43,7 @@ def _post_jina (texts: list[str], task: str, timeout: int =60) -> list[list[floa
     return [x["embedding"] for x in data]
 
 def _post_jina_with_retry (texts: list[str], task: str, max_retries: int =3)-> list[list[float]]:
+    # Như _post_jina nhưng thử lại khi gặp 429/5xx hoặc lỗi mạng (chờ 1s, 2s, 4s + ngẫu nhiên)
     for attempt in range (max_retries + 1):    # 1 lần đầu + tối đa max_retries lần thử lại
         try:
             return _post_jina ( texts, task)
@@ -61,6 +65,7 @@ def _post_jina_with_retry (texts: list[str], task: str, max_retries: int =3)-> l
                 raise
 
 def batch_embed_text (input: list[str], task: str = TASK_PASSAGE, batch_size: int = 32) -> np.ndarray:
+    # Chia text thành từng lô, nhúng từng lô, ghép lại rồi chuẩn hoá mỗi hàng về độ dài 1
     all_vecs= []
     for i in range (0, len(input), batch_size): 
         batch = input [i: i + batch_size]
@@ -71,10 +76,12 @@ def batch_embed_text (input: list[str], task: str = TASK_PASSAGE, batch_size: in
     return matrix/norms
 
 def embed_text (text: str, task: str = TASK_QUERY) -> np.ndarray: 
+    # Nhúng 1 câu hỏi (task query) -> vector (1024,)
     matrix = batch_embed_text([text], task= task) 
     return matrix [0]
 
 def embed_chunks (chunks: list, batch_size: int = 32) -> np.ndarray:
+    # Nhúng mọi chunk (task passage) và gắn vector vào chunk.embedding
     texts= [c.content for c in chunks]
     matrix = batch_embed_text(texts, task = TASK_PASSAGE, batch_size= batch_size)
     for i, chunk in enumerate(chunks): 
@@ -82,6 +89,7 @@ def embed_chunks (chunks: list, batch_size: int = 32) -> np.ndarray:
     return matrix
 
 def compute_index_hash (chunks: list) -> str: 
+    # Dấu vân tay của bộ chunk + model: playbook đổi thì hash đổi -> biết phải build lại index
     h = hashlib.sha256()
     h.update(f"{MODEL_NAME} | {TASK_PASSAGE}\n".encode("utf-8"))
     for c in chunks: 
@@ -115,6 +123,7 @@ def load_index(index_dir: str = INDEX_DIR):
 
 def load_or_build_index(docs_dir: str = DOCS_DIR, index_dir: str = INDEX_DIR,
                         force: bool = False) -> tuple[list, np.ndarray]:
+    # Dùng cache nếu hash khớp, không thì nhúng lại và lưu cache. Trả về (chunks, ma trận)
     chunks = chunk_all(docs_dir)                                         # luôn chunk lại từ playbook (nhanh, không tốn API)
     current_hash = compute_index_hash(chunks)                            # hash của playbook HIỆN TẠI
 

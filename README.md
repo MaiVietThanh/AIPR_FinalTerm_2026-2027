@@ -56,7 +56,7 @@ câu hỏi ─► agent loop (src/agent/loop.py) ──► LLM (Groq)
 - **Agent loop:** tự viết, `MAX_STEPS = 10`, tool lỗi trả về `"Error: ..."` thay vì làm sập chương trình, tên tool lạ bị từ chối.
 - **Verify-after-write:** sau mỗi tool ghi, code tự gọi tool đọc tương ứng (`block_ip` → `get_blocklist`, `create_incident` → `get_incident`, `lock_account` → `get_account_status`).
 - **State:** không dùng database; blocklist, incidents, accounts lưu trong 3 file JSON, `reset_state()` đưa về ban đầu trước mỗi câu eval.
-- Hợp đồng 10 tool: `tool_contract.md`.
+- Hợp đồng 10 tool: `docs/tool_contract.md`.
 
 ## Đánh giá
 
@@ -83,12 +83,12 @@ prompts/            system.txt (agent), judge.txt (chấm faithfulness)
 src/config.py       NOW cố định, dải IP nội bộ/đối tác
 src/rag/            chunking, embedding, hybrid_search, search
 src/mcp_server/     store.py (đọc log, state), schemas.py (TypedDict kết quả tool), tools.py (10 tool), server.py (FastMCP stdio)
-src/agent/          llm.py, parser.py, mcp_client.py, loop.py, logger.py
-scripts/            ask.py, run_eval.py, build_index.py, seed_logs.py, reset_state.py, test_*.py
-tests/testset.jsonl
+src/agent/          llm.py, parser.py, mcp_client.py, loop.py, logger.py, react_trace.py
+scripts/            ask.py, run_eval.py, build_index.py, seed_logs.py, reset_state.py, view_log.py
+tests/             testset.jsonl (20 câu eval), test_*.py (test MCP server không cần LLM)
 results/            eval.csv, eval.png
 logs/               trace các lần chạy thật
-docs/               hướng dẫn làm việc nhóm, git
+docs/               hướng dẫn làm việc nhóm, git, tool_contract.md (hợp đồng 10 tool)
 ```
 
 Khai báo dùng AI: `ai-usage.md`. Hướng dẫn git và phân công chi tiết: `docs/huong-dan-nhom.md`.

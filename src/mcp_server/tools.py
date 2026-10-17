@@ -1,3 +1,6 @@
+# 10 tool của MCP server: 6 tool đọc (search_docs, query_auth_logs, count_failed_logins, get_blocklist,
+# get_incident, get_account_status) và 4 tool ghi (block_ip, unblock_ip, create_incident, lock_account).
+# Tool chỉ trả số liệu, không tự kết luận; tham số sai hoặc hành động bị cấm thì raise ValueError (MCP gửi về isError).
 from datetime import timedelta
 
 from store import load_logs, read_state, write_state        # import store TRƯỚC, vì store thêm thư mục src vào sys.path
@@ -21,6 +24,7 @@ except Exception as e:
     log.error("Không nạp được RAG: %r", e)
 
 def _filter(logs, ip=None, username=None, lookback_minutes=1440):
+    # Lọc log trong lookback_minutes phút trước NOW, theo IP và/hoặc username (None = không lọc)
     if lookback_minutes <= 0:
         raise ValueError("lookback_minutes phải > 0")
     ip = ip.strip() if ip else None                    # model hay gửi kèm khoảng trắng

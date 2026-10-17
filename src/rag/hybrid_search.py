@@ -17,6 +17,7 @@ def tokenize(text: str) -> list[str]:
     return [t for t in tokens if t]   
 
 def normalise_scores(scores: list[float]) -> list[float]:
+    # Min-max: đưa điểm BM25 về khoảng 0..1 để cộng được với cosine
     if not scores:                                    # list rỗng → trả rỗng
         return []
     min_s = min(scores)                               # điểm thấp nhất
@@ -39,6 +40,7 @@ def hybrid_search(
     w_bm25: float = 0.3,
     w_vector: float = 0.7,
 ) -> list[tuple[int, float]]:
+    # Điểm hybrid = 0.3 * BM25 (đã chuẩn hoá) + 0.7 * cosine. Trả về [(vị trí chunk, điểm)] giảm dần
     if not chunks:
         return []
 

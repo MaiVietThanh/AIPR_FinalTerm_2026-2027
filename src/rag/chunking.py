@@ -1,3 +1,5 @@
+# Đọc playbook data/docs/*.md (front matter + thân bài) và cắt thành chunk theo mục "##".
+# chunk_fixed() là cách cắt cố định 512 ký tự từ bài lab, chỉ để so sánh; project dùng chunk_by_section().
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -65,6 +67,7 @@ def chunk_fixed (doc:Document, chunk_size: int = 512, overlap: int = 64) -> list
 # ===== VIẾT MỚI =====
 def parse_front_matter(text: str) -> tuple[dict, str]:
 
+    # Tách phần metadata nằm giữa 2 dòng --- (doc_id, version, status...) khỏi thân bài
     parts = text.split("---", 2) # thành 3 phần, [ '', 'metadata...', 'thân bài...' ] tương ứng part 0-1-2
     meta = {}
     for line in parts[1].splitlines():
@@ -75,6 +78,7 @@ def parse_front_matter(text: str) -> tuple[dict, str]:
         
 
 def load_document(path: str | Path) -> Document:
+    # Đọc 1 file .md thành Document (doc_id, title lấy từ front matter)
     text = Path(path).read_text(encoding="utf-8")
     meta, body = parse_front_matter(text)
     return Document (
@@ -136,6 +140,7 @@ def chunk_by_section(doc: Document) -> list[DocumentChunk]:
     return chunks
 
 def chunk_all(docs_dir: str | Path = DOCS_DIR) -> list[DocumentChunk]:
+    # Chunk mọi file *.md trong thư mục, nên KHÔNG để file .md nào khác ngoài playbook vào data/docs/
     all_chunks = []
     for path in sorted(Path(docs_dir).glob("*.md")):
         doc = load_document (path)

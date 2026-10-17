@@ -1,3 +1,5 @@
+# Test nhanh MCP server: liệt kê tool + tham số, gọi count_failed_logins 1 lần đúng và 1 lần sai tham số.
+#   python tests\test_server.py
 import os
 import asyncio
 import sys

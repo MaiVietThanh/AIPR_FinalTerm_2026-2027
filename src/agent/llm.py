@@ -1,3 +1,6 @@
+# Gọi LLM qua API kiểu OpenAI (mặc định Groq): đọc cấu hình từ .env, gửi messages, tự thử lại khi gặp
+# 429/5xx/lỗi mạng, và đổi lệnh gọi tool gốc của model về JSON {"action", "args"} để parser.py đọc được.
+# call_llm() trả về (text, usage) để loop.py cộng dồn token.
 import time, sys, os, json, urllib.request, urllib.error
 from pathlib import Path
 from dotenv import load_dotenv

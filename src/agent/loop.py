@@ -1,4 +1,6 @@
-# phần hết hợp parser với call_llm để tạo thành loop
+# Phần kết hợp parser với call_llm để tạo thành vòng lặp agent (ReAct):
+# hỏi LLM -> đọc lệnh (parser.py) -> gọi tool qua MCP -> gửi Observation lại cho LLM,
+# lặp đến khi có final_answer hoặc quá MAX_STEPS bước. Sau mỗi tool ghi, tự gọi tool đọc để kiểm chứng.
 
 import json
 from pathlib import Path
@@ -7,8 +9,8 @@ import llm
 from llm import call_llm
 from logger import RunLogger
 
-MAX_STEPS = 10
-MAX_OBS = 2500
+MAX_STEPS = 10                      # tối đa 10 lượt hỏi LLM cho 1 câu hỏi
+MAX_OBS = 2500                      # Observation dài hơn số ký tự này thì bị cắt bớt
 _ROOT = Path(__file__).resolve().parents[2]
 SYSTEM_PROMPT = (_ROOT / "prompts" / "system.txt").read_text(encoding="utf-8")
 
@@ -20,6 +22,7 @@ VERIFY_TOOL = {                     # tool ghi -> tool đọc để kiểm chứ
 }
 
 def _verify_args(name, args, result):
+    # Tham số cho tool đọc kiểm chứng: lock_account -> username, create_incident -> incident_id vừa tạo
     if name == "lock_account":
         return {"username": args.get("username")}
     if name == "create_incident":
@@ -58,6 +61,8 @@ def _count_objects(text):
             i += 1
 
 def run_agent(question, call_tool, tools_text, tool_names, logger= None):
+    # call_tool: hàm gọi tool (MCP thật hoặc giả); tools_text: danh sách tool chèn vào {tools} của system prompt;
+    # tool_names: tên tool hợp lệ. Trả về dict answer, steps, tokens, usage, messages (run_eval lấy làm bằng chứng)
     log = logger.log if logger else (lambda *a, **k: None)   # không truyền logger thì bỏ qua
     log("question", question=question)
     messages = [
@@ -116,7 +121,7 @@ def run_agent(question, call_tool, tools_text, tool_names, logger= None):
             "tokens": tokens, "usage": usage_sum, "messages": messages}
 
 
-# Test thửu xem loop chạy đc chưa
+# Test thử loop với tool giả (không cần MCP server)
 if __name__ == "__main__":
     blocklist = set()
     def fake_call_tool(name, args):
