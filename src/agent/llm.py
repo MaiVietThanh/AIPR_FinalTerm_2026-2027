@@ -14,6 +14,7 @@ JSON_MODE = os.getenv("LLM_JSON_MODE", "1") == "1"          # gpt-oss: đặt 0 
 REASONING_EFFORT = os.getenv("LLM_REASONING_EFFORT")         # gpt-oss: low | Qwen: none | bên khác: để trống
 NATIVE_TOOLS = os.getenv("LLM_NATIVE_TOOLS", "0") == "1"  # gpt-oss: đặt 1 (gọi tool theo kiểu gốc của model)
 TOOLS = None                                                 # set_tools() điền vào khi NATIVE_TOOLS=1
+LAST_REASONING = ""                                          # phần suy luận riêng của model (gpt-oss), chỉ để ghi log
 RETRY_CODES ={429, 500, 502, 503, 504}
 
 if not API_KEY:
@@ -38,6 +39,8 @@ def _post(body): # Lấy text và usage sd trong call llm
     if not data.get("choices"):              # phản hồi lạ (vd lỗi bọc trong JSON 200) -> coi như lỗi tạm thời, thử lại
         raise ValueError(f"phản hồi không có 'choices': {str(data)[:200]}")
     msg = data["choices"][0]["message"]
+    global LAST_REASONING
+    LAST_REASONING = (msg.get("reasoning") or "").strip()   # không đưa vào messages để khỏi tốn token
     text = msg.get("content") or ""
     usage = data.get("usage",{})
     if msg.get("tool_calls"):                # model gọi tool kiểu gốc -> đổi sang JSON {"action","args"} của mình
@@ -75,6 +78,8 @@ def call_llm(messages, retries=5, use_tools=True):  # judge gọi với use_tool
         body["response_format"] = {"type": "json_object"}     # ép trả JSON
     if REASONING_EFFORT:
         body["reasoning_effort"] = REASONING_EFFORT
+    global LAST_REASONING
+    LAST_REASONING = ""                     # xoá suy luận của lượt trước
     for i in range(retries):
         wait=2**i
         try:

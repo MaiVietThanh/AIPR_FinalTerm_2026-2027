@@ -17,6 +17,7 @@ sys.path.insert(0, str(ROOT / "src" / "mcp_server"))
 
 from llm import call_llm, set_tools
 from logger import RunLogger
+from react_trace import format_trace, read_log
 from loop import run_agent
 from mcp_client import MCPClient
 from parser import _extract_json
@@ -88,8 +89,11 @@ def judge(answer, context):
 def run_case(case, client, use_judge):
     reset_state()                           # mỗi câu bắt đầu từ state sạch
     t0 = time.time()
+    logger = RunLogger(case["id"])
     result = run_agent(case["question"], client.call_tool, client.tools_text(),
-                       client.tool_names, RunLogger())
+                       client.tool_names, logger)
+    # bản dễ đọc (Thought / Action / Observation) nằm cạnh file .jsonl
+    logger.path.with_suffix(".txt").write_text(format_trace(read_log(logger.path)), encoding="utf-8")
     seconds = round(time.time() - t0, 1)
     answer = result["answer"]
 
