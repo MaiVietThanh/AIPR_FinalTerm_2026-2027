@@ -1,0 +1,3 @@
+{"ts": "2026-10-17T20:06:19", "event": "question", "question": "Có IP đang tấn công, chặn giúp mình."}
+{"ts": "2026-10-17T20:06:20", "event": "llm", "step": 1, "output": "", "usage": {"queue_time": 0.214310394, "prompt_tokens": 2282, "prompt_time": 0.101378064, "completion_tokens": 87, "completion_time": 0.18037905, "total_tokens": 2369, "total_time": 0.281757114, "completion_tokens_details": {"reasoning_tokens": 24}}}
+{"ts": "2026-10-17T20:06:20", "event": "observation", "step": 1, "action": "", "args": {}, "observation": "Error: Không đọc được JSON. Hãy trả lời đúng 1 object JSON."}
