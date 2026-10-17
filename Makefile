@@ -1,6 +1,6 @@
 PY ?= python
 
-.PHONY: setup index demo eval eval-resume reset
+.PHONY: setup index demo view eval eval-resume reset
 
 # Cài thư viện, tạo .env từ mẫu, sinh log giả lập, build index RAG, reset state
 setup:
@@ -16,6 +16,10 @@ index:
 # Hỏi agent 1 câu (mặc định: kiểm tra IP 203.0.113.7)
 demo: reset
 	$(PY) scripts/ask.py $(Q)
+
+# Xem lại log mới nhất theo Thought / Action / Observation (ghi thêm file .txt)
+view:
+	$(PY) scripts/view_log.py --save
 
 # Chạy toàn bộ tests/testset.jsonl -> results/eval.csv, results/eval.png
 eval:

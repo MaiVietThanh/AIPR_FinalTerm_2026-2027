@@ -3,11 +3,12 @@
 import json
 from pathlib import Path
 from parser import parse_action
+import llm
 from llm import call_llm
 from logger import RunLogger
 
 MAX_STEPS = 10
-MAX_OBS = 2000
+MAX_OBS = 2500
 _ROOT = Path(__file__).resolve().parents[2]
 SYSTEM_PROMPT = (_ROOT / "prompts" / "system.txt").read_text(encoding="utf-8")
 
@@ -27,6 +28,21 @@ def _verify_args(name, args, result):
         except (ValueError, AttributeError):
             return {}
     return {}                       # get_blocklist không cần tham số
+
+def _compact_search(text):
+    # Kết quả search_docs lặp lại title/chunk_id/status ở mỗi chunk -> tốn chỗ, chunk cuối bị MAX_OBS cắt mất
+    # (lần chạy 1, T08: bảng mức độ SEC-09 §4 nằm ở chunk cuối nên model không thấy). Chỉ giữ phần model cần.
+    try:
+        data = json.loads(text)
+    except ValueError:
+        return text                                   # lỗi (chuỗi "Error: ...") thì giữ nguyên
+    results = []
+    for r in data.get("results", []):
+        body = r.get("text", "")
+        if body.startswith("["):                      # bỏ dòng đầu "[SEC-09 v1.0 — tiêu đề]" vì đã có doc_id, version
+            body = body.split("\n", 1)[-1]
+        results.append({"doc_id": r.get("doc_id"), "version": r.get("version"), "text": body})
+    return json.dumps({"results": results}, ensure_ascii=False, separators=(",", ":"))
 
 def _count_objects(text):
     # Đếm số object JSON nằm liền nhau trong 1 câu trả lời (model đôi khi viết 2 lệnh gọi tool 1 lúc)
@@ -52,7 +68,7 @@ def run_agent(question, call_tool, tools_text, tool_names, logger= None):
     usage_sum = {"calls": 0, "prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0, "max_prompt": 0}   # USAGE cả câu hỏi
     for step in range(1, MAX_STEPS + 1):
         text, usage = call_llm(messages)                       # hỏi
-        log("llm",step=step, output=text, usage=usage)
+        log("llm",step=step, output=text, reasoning=llm.LAST_REASONING, usage=usage)
         tokens += usage.get("total_tokens", 0)
         usage_sum["calls"] += 1
         for k in ("prompt_tokens", "completion_tokens", "total_tokens"):
@@ -77,6 +93,8 @@ def run_agent(question, call_tool, tools_text, tool_names, logger= None):
                 observation = f"Error: {e}"                   # tool lỗi -> chuỗi, không raise
             if not isinstance(observation, str):            # phòng khi call_tool trả về dict
                 observation = json.dumps(observation, ensure_ascii=False)
+            if action.name == "search_docs":
+                observation = _compact_search(observation)
             if action.name in VERIFY_TOOL and not observation.startswith("Error"):
                 vname = VERIFY_TOOL[action.name]
                 try:

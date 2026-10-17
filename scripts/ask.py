@@ -9,16 +9,16 @@ from llm import set_tools
 from loop import run_agent
 from logger import RunLogger
 from mcp_client import MCPClient
+from react_trace import format_trace, read_log
 
 question = " ".join(sys.argv[1:]) or "Kiểm tra IP 203.0.113.7 và xử lý theo playbook."
 
 with MCPClient() as client:
     print(len(client.tool_names), "tool:", sorted(client.tool_names))
     set_tools(client.openai_tools())
+    logger = RunLogger()
     result = run_agent(question, client.call_tool, client.tools_text(),
-                       client.tool_names, RunLogger())
+                       client.tool_names, logger)
 
-for m in result["messages"][2:]:
-    print(f"\n[{m['role']}] {m['content'][:300]}")
-print("\n=> TRẢ LỜI:", result["answer"])
-print(f"   ({result['steps']} bước, {result['tokens']} token)")
+print(format_trace(read_log(logger.path)))     # in lại theo Thought / Action / Observation
+print(f"\nLog: {logger.path}")
