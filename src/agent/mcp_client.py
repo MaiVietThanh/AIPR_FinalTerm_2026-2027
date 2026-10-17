@@ -16,6 +16,7 @@ SERVER = Path(__file__).resolve().parents[1] / "mcp_server" / "server.py"
 
 class MCPClient:
     def __init__(self):
+        # Chạy event loop nền, khởi động server.py làm tiến trình con và chờ đến khi kết nối xong
         self._loop = asyncio.new_event_loop()
         threading.Thread(target=self._loop.run_forever, daemon=True).start()
         self._ready = threading.Event()
@@ -69,6 +70,7 @@ class MCPClient:
                 for t in self.tools]
 
     def call_tool(self, name, args) -> str:
+        # Gọi 1 tool, gộp kết quả thành chuỗi JSON gọn; lỗi thì chuỗi bắt đầu bằng "Error"
         res = self._run(self.session.call_tool(name, args))
         text = "\n".join(c.text for c in res.content if hasattr(c, "text"))
         try:
@@ -80,6 +82,7 @@ class MCPClient:
         return text
 
     def close(self):
+        # Báo _serve thoát để đóng kết nối và tắt server, rồi dừng event loop nền
         if getattr(self, "_stop", None) is not None:     # chỉ có _stop khi đã kết nối được
             self._loop.call_soon_threadsafe(self._stop.set)
             try:

@@ -29,7 +29,7 @@ Mức độ:
 | `src/mcp_server/schemas.py` | Phát | AI hướng dẫn | TypedDict cho kết quả 10 tool; FastMCP dùng để sinh outputSchema và kiểm tra kết quả |
 | `src/agent/mcp_client.py` | Phát | AI viết | Cầu nối sync/async tới MCP server qua stdio, `openai_tools()` |
 | `scripts/ask.py`, `scripts/run_eval.py` | Phát | AI viết | run_eval: reset state mỗi câu, so state, kiểm tra trích nguồn, LLM judge, `--resume` |
-| `scripts/build_index.py`,`Makefile`, `reset_state.py`, `probe_llm.py`, `README.md` | Thành | AI hướng dẫn | |
+| `scripts/build_index.py`,`Makefile`, `reset_state.py`, `README.md` | Thành | AI hướng dẫn | |
 
 ## Prompt
 

@@ -1,3 +1,6 @@
+# Test thủ công các tool GHI qua MCP server thật: chặn IP nội bộ / đặt status resolved phải bị từ chối,
+# chặn trùng trả already_blocked... Chạy trên state sạch và reset lại khi xong.
+#   python tests\test_write_tools.py
 import asyncio
 import os
 import sys

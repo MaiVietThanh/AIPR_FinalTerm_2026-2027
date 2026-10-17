@@ -1,4 +1,5 @@
-# file gọi tool
+# Lớp lưu trữ của MCP server: đọc log đăng nhập auth_logs.csv (chỉ đọc) và đọc/ghi 3 file trạng thái
+# data/state/blocklist.json, incidents.json, accounts.json. tools.py gọi các hàm ở đây.
 
 import copy, csv, json, sys, time
 from datetime import datetime
@@ -10,6 +11,7 @@ sys.path.insert(0, str(SRC / "rag"))    # để import được search.py của 
 from config import LOG_FILE, STATE_DIR
 
 def _acc(username, is_admin=False):
+    # Tạo 1 tài khoản ở trạng thái chưa bị khoá
     return {"username": username, "is_admin": is_admin, "locked": False,
             "locked_until": None, "reason": None}
 
@@ -38,10 +40,12 @@ def _path(name):
     return STATE_DIR / f"{name}.json"
 
 def read_state(name):
+    # Đọc 1 file trạng thái (blocklist / incidents / accounts) thành list
     with open(_path(name), encoding="utf-8") as f:
         return json.load(f)
 
 def write_state(name, data):
+    # Ghi ra file .tmp trước rồi mới thay file thật, để file không bị hỏng nếu dừng giữa chừng
     path = _path(name)
     tmp = path.with_suffix(".tmp")
     with open(tmp, "w", encoding="utf-8") as f:
@@ -56,6 +60,7 @@ def write_state(name, data):
             time.sleep(0.2 * (attempt + 1))
 
 def reset_state():
+    # Đưa cả 3 file về INITIAL_STATE (run_eval gọi trước mỗi câu)
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     for name, data in INITIAL_STATE.items():
         write_state(name, copy.deepcopy(data))

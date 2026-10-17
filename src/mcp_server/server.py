@@ -1,10 +1,13 @@
+# MCP server "soc-server": đăng ký 10 hàm trong tools.py thành tool MCP và chạy qua stdio.
+# Agent (mcp_client.py) và các script test khởi động file này làm tiến trình con.
 import logging
 import sys
 import os
 from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
-# Code RAG của Tuyết dùng đường dẫn tương đối "data/index", nên chuyển về thư mục gốc dự án
+# Chuyển về thư mục gốc dự án để đường dẫn tương đối (nếu có) luôn tính từ gốc.
+# Trước đây RAG dùng "data/index" tương đối; nay đã đổi sang đường dẫn tuyệt đối nhưng vẫn giữ cho chắc
 os.chdir(Path(__file__).resolve().parents[2])
 
 # stdout là đường truyền tin nhắn MCP, nên log phải ra stderr

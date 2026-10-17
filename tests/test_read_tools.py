@@ -1,3 +1,5 @@
+# Test thủ công các tool ĐỌC qua MCP server thật (không cần LLM):  python tests\test_read_tools.py
+# Có cả trường hợp lỗi (tài khoản / sự cố không tồn tại) để xem server trả isError mà không bị dừng.
 import os
 import asyncio
 import sys

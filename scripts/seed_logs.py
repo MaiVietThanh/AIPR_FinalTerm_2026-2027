@@ -1,3 +1,6 @@
+# Sinh log đăng nhập giả lập data/auth_logs/auth_logs.csv quanh mốc NOW. Mỗi IP là 1 kịch bản (brute-force,
+# spraying, tài khoản bị chiếm, IP nội bộ/đối tác, injection...) cộng thêm log nhiễu bình thường.
+#   python scripts\seed_logs.py
 import csv
 import sys
 from datetime import timedelta
@@ -9,6 +12,7 @@ from config import LOG_FILE as OUT, NOW     # dùng chung mốc giờ với các
 rows = []
 
 def add(ip, user, success, seconds_ago, service="ssh"):
+    # Thêm 1 dòng log, thời điểm = NOW trừ seconds_ago giây
     ts = NOW - timedelta(seconds=seconds_ago)
     rows.append({"ts": ts.isoformat(), "src_ip": ip, "username": user,
                  "service": service, "success": int(success)})

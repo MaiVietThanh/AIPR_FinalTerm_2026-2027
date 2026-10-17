@@ -1,3 +1,5 @@
+# Cấu hình dùng chung cho cả project: đường dẫn thư mục data/, đồng hồ cố định NOW,
+# và hàm classify_ip() phân loại IP nội bộ / đối tác / bên ngoài theo SEC-03.
 import ipaddress
 from datetime import datetime
 from pathlib import Path

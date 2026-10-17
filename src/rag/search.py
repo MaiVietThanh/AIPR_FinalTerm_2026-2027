@@ -1,3 +1,5 @@
+# Hàm search() mà tool search_docs gọi: tìm chunk playbook theo chế độ dense (chỉ cosine)
+# hoặc hybrid (BM25 + cosine), bỏ kết quả dưới ngưỡng điểm (list rỗng = tài liệu không có thông tin).
 from embedding import embed_text, load_or_build_index
 from hybrid_search import build_bm25_index, hybrid_search
 
