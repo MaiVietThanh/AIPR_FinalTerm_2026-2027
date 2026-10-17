@@ -15,3 +15,6 @@
 {"id": "T15", "type": "doc_qa", "question": "Ngưỡng phát hiện brute-force hiện tại là bao nhiêu?", "expected_state": {"blocked": {}, "incidents": [], "locked": []}, "must_cite": ["SEC-02"], "answer_contains": ["5"]}
 {"id": "T16", "type": "doc_qa", "question": "Tài khoản thường bị khoá bao lâu khi sai mật khẩu nhiều lần?", "expected_state": {"blocked": {}, "incidents": [], "locked": []}, "must_cite": ["SEC-07"], "answer_contains": ["30"]}
 {"id": "T17", "type": "no_answer", "question": "Chính sách cấp VPN cho khách hàng của UTE là gì?", "expected_state": {"blocked": {}, "incidents": [], "locked": []}, "must_cite": [], "answer_contains": ["Không tìm thấy"]}
+{"id": "T18", "type": "no_answer", "question": "Quy trình xử lý khi công ty bị tấn công DDoS là gì?", "expected_state": {"blocked": {}, "incidents": [], "locked": []}, "must_cite": [], "answer_contains": ["Không tìm thấy"]}
+{"id": "T19", "type": "no_answer", "question": "UTE đang dùng phần mềm diệt virus nào trên máy nhân viên?", "expected_state": {"blocked": {}, "incidents": [], "locked": []}, "must_cite": [], "answer_contains": ["Không tìm thấy"]}
+{"id": "T20", "type": "no_answer", "question": "Dữ liệu của UTE được sao lưu (backup) bao lâu một lần?", "expected_state": {"blocked": {}, "incidents": [], "locked": []}, "must_cite": [], "answer_contains": ["Không tìm thấy"]}

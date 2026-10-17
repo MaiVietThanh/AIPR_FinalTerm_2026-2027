@@ -23,6 +23,8 @@ from parser import _extract_json
 from store import read_state, reset_state
 
 TESTSET = ROOT / "tests" / "testset.jsonl"
+USAGE_KEYS = ("calls", "prompt_tokens", "completion_tokens", "max_prompt")
+REFUSAL_TYPES = {"no_answer", "no_evidence"}   # câu agent phải từ chối: không có trong tài liệu / không đủ bằng chứng
 RESULTS = ROOT / "results"
 JUDGE_PROMPT = (ROOT / "prompts" / "judge.txt").read_text(encoding="utf-8")
 MAX_CONTEXT = 12000         # ký tự bằng chứng gửi cho judge, tránh vượt giới hạn token của Groq
@@ -101,6 +103,7 @@ def run_case(case, client, use_judge):
         "pass": not state_errors and not missing_cite and not missing_text,
         "faithfulness": "" if faith is None else round(faith, 2), "claims": n_claims,
         "steps": result["steps"], "tokens": result["tokens"], "seconds": seconds,
+        **{k: result.get("usage", {}).get(k, 0) for k in USAGE_KEYS},
         "errors": "; ".join(state_errors + [f"thiếu nguồn {missing_cite}"] * bool(missing_cite)
                             + [f"thiếu chữ {missing_text}"] * bool(missing_text)),
         "answer": answer.replace("\n", " ")[:300],
@@ -121,6 +124,16 @@ def summary(rows):
     print(f"Trích nguồn : {sum(r['cite_ok'] for r in rows)}/{n}")
     if faiths:
         print(f"Faithfulness: {sum(faiths) / len(faiths):.2f} (trung bình {len(faiths)} câu)")
+    refuse = [r for r in rows if r["type"] in REFUSAL_TYPES]
+    if refuse:
+        print(f"Từ chối đúng: {sum(r['pass'] for r in refuse)}/{len(refuse)} (câu {', '.join(sorted(REFUSAL_TYPES))})")
+    used = [r for r in rows if r.get("calls")]     # dòng cũ chưa có USAGE thì bỏ qua
+    if used:
+        m = len(used)
+        print(f"USAGE TB    : {sum(r['calls'] for r in used) / m:.1f} calls, "
+              f"{sum(r['prompt_tokens'] for r in used) / m:.0f} prompt, "
+              f"{sum(r['completion_tokens'] for r in used) / m:.0f} completion, "
+              f"max_prompt lớn nhất {max(r['max_prompt'] for r in used)} ({m} câu)")
     print(f"Trung bình  : {sum(r['steps'] for r in rows) / n:.1f} bước, "
           f"{sum(r['tokens'] for r in rows) / n:.0f} token, {sum(r['seconds'] for r in rows) / n:.0f} giây/câu")
     return by_type
@@ -146,7 +159,8 @@ def save(rows):
     # Ghi lại sau MỖI câu: dừng giữa chừng (Ctrl+C, hết token) vẫn giữ được kết quả đã chạy
     RESULTS.mkdir(exist_ok=True)
     with open(RESULTS / "eval.csv", "w", newline="", encoding="utf-8-sig") as f:   # utf-8-sig để Excel đọc đúng tiếng Việt
-        w = csv.DictWriter(f, fieldnames=list(rows[0]))
+        fields = list(dict.fromkeys(k for r in rows for k in r))   # đủ cột cả khi dòng cũ thiếu cột mới
+        w = csv.DictWriter(f, fieldnames=fields, restval="")
         w.writeheader()
         w.writerows(rows)
 
@@ -160,8 +174,8 @@ def load_done():
     for r in rows:                          # csv lưu mọi thứ thành chuỗi -> đổi lại kiểu
         for k in ("state_ok", "cite_ok", "answer_ok", "pass"):
             r[k] = r[k] == "True"
-        for k in ("steps", "tokens", "claims"):
-            r[k] = int(r[k])
+        for k in ("steps", "tokens", "claims", *USAGE_KEYS):
+            r[k] = int(r[k]) if r.get(k) else 0
         r["seconds"] = float(r["seconds"])
         r["faithfulness"] = "" if r["faithfulness"] == "" else float(r["faithfulness"])
     return [r for r in rows if not r["errors"].startswith("LỖI")]   # câu bị lỗi thì chạy lại

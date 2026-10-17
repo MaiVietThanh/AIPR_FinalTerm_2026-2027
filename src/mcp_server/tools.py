@@ -2,6 +2,8 @@ from datetime import timedelta
 
 from store import load_logs, read_state, write_state        # import store TRƯỚC, vì store thêm thư mục src vào sys.path
 from config import NOW, classify_ip
+from schemas import (Account, BlocklistResult, BlockResult, CountFailedResult, CreateIncidentResult,
+                     IncidentListResult, LockResult, QueryLogsResult, SearchResult, UnblockResult)
 import logging
 log = logging.getLogger("soc-tools")
 
@@ -19,6 +21,10 @@ except Exception as e:
     log.error("Không nạp được RAG: %r", e)
 
 def _filter(logs, ip=None, username=None, lookback_minutes=1440):
+    if lookback_minutes <= 0:
+        raise ValueError("lookback_minutes phải > 0")
+    ip = ip.strip() if ip else None                    # model hay gửi kèm khoảng trắng
+    username = username.strip() if username else None
     since = NOW - timedelta(minutes=lookback_minutes)
     return [r for r in logs
             if r["ts"] >= since
@@ -27,7 +33,7 @@ def _filter(logs, ip=None, username=None, lookback_minutes=1440):
 
 # Tool đọc
 def query_auth_logs(ip: str = None, username: str = None, only_failed: bool = False,
-                    lookback_minutes: int = 1440, limit: int = 20) -> dict:
+                    lookback_minutes: int = 1440, limit: int = 20) -> QueryLogsResult:
     """Liệt kê các bản ghi đăng nhập (mới nhất trước), lọc theo IP và/hoặc username."""
     rows = _filter(load_logs(), ip, username, lookback_minutes)
     if only_failed:
@@ -38,12 +44,13 @@ def query_auth_logs(ip: str = None, username: str = None, only_failed: bool = Fa
         "rows": [{**r, "ts": r["ts"].isoformat()} for r in rows[:limit]],
     }
 
-def count_failed_logins(ip: str, window_minutes: int = 5, lookback_minutes: int = 1440) -> dict:
+def count_failed_logins(ip: str, window_minutes: int = 5, lookback_minutes: int = 1440) -> CountFailedResult:
     """Đếm lần đăng nhập thất bại của 1 IP. Trả về loại IP, số lần sai nhiều nhất, số username
     khác nhau nhiều nhất trong một cửa sổ window_minutes phút liên tục bất kỳ, và các lần đăng nhập
     thành công ngay sau chuỗi sai."""
     if window_minutes <= 0:
         raise ValueError("window_minutes phải > 0")
+    ip = ip.strip()
     ip_type = classify_ip(ip)                          # internal / partner / external (theo SEC-03)
     rows = sorted(_filter(load_logs(), ip, None, lookback_minutes), key=lambda r: r["ts"])
     streak, success_after_fail = {}, []                # đếm số lần sai liên tiếp của từng username
@@ -55,8 +62,7 @@ def count_failed_logins(ip: str, window_minutes: int = 5, lookback_minutes: int 
                 success_after_fail.append({"username": r["username"], "fails_before": streak[r["username"]],
                                            "success_at": r["ts"].isoformat()})
             streak[r["username"]] = 0
-    fails = sorted((r for r in _filter(load_logs(), ip, None, lookback_minutes) if not r["success"]),
-                   key=lambda r: r["ts"])
+    fails = [r for r in rows if not r["success"]]      # rows đã sắp theo thời gian, không cần đọc log lần 2
     window = timedelta(minutes=window_minutes)
     max_fails, max_users = 0, 0
     for i, start in enumerate(fails):                  # mỗi cửa sổ bắt đầu tại 1 lần sai
@@ -82,14 +88,14 @@ def count_failed_logins(ip: str, window_minutes: int = 5, lookback_minutes: int 
     }
     
 # Tool đọc: trạng thái
-def get_blocklist(ip: str = None) -> dict:
+def get_blocklist(ip: str = None) -> BlocklistResult:
     """Xem danh sách IP đang bị chặn. Truyền ip để chỉ xem bản ghi của IP đó."""
     entries = read_state("blocklist")
     if ip:
         entries = [e for e in entries if e["ip"] == ip.strip()]
     return {"count": len(entries), "entries": entries}
 
-def get_incident(incident_id: str = None, ip: str = None) -> dict:
+def get_incident(incident_id: str = None, ip: str = None) -> IncidentListResult:
     """Xem sự cố theo mã (vd 'INC-0001') hoặc theo IP. Không truyền gì thì trả về tất cả."""
     incidents = read_state("incidents")
     if incident_id:
@@ -100,7 +106,7 @@ def get_incident(incident_id: str = None, ip: str = None) -> dict:
         incidents = [i for i in incidents if i["ip"] == ip.strip()]
     return {"count": len(incidents), "incidents": incidents}
 
-def get_account_status(username: str) -> dict:
+def get_account_status(username: str) -> Account:
     """Xem tài khoản: có phải admin không, có đang bị khoá không."""
     for acc in read_state("accounts"):
         if acc["username"] == username.strip():
@@ -108,7 +114,7 @@ def get_account_status(username: str) -> dict:
     raise ValueError(f"không có tài khoản '{username}'")
 
 # Tool đọc: playbook
-def search_docs(query: str, mode: str = "hybrid", top_k: int = 3, only_active: bool = True) -> dict:
+def search_docs(query: str, mode: str = "hybrid", top_k: int = 3, only_active: bool = True) -> SearchResult:
     """Tìm đoạn playbook SEC liên quan tới câu hỏi. results rỗng = tài liệu không có thông tin."""
     if not query.strip():
         raise ValueError("query không được rỗng")
@@ -125,7 +131,7 @@ def _check_severity(severity):
         raise ValueError(f"severity phải là một trong {SEVERITIES}, nhận được {severity!r}")
 
 def block_ip(ip: str, severity: str, duration_minutes: int, reason: str, doc_id: str,
-             incident_id: str = None) -> dict:
+             incident_id: str = None) -> BlockResult:
     """Chặn 1 IP bên ngoài. KHÔNG chặn được IP nội bộ/đối tác (SEC-03): phải tạo incident escalated."""
     ip = ip.strip()
     kind = classify_ip(ip)                       # IP sai định dạng -> ValueError luôn
@@ -147,7 +153,7 @@ def block_ip(ip: str, severity: str, duration_minutes: int, reason: str, doc_id:
     log.info("block_ip: đã chặn %s", ip)
     return {"status": "blocked", "entry": entry}
 
-def unblock_ip(ip: str, reason: str) -> dict:
+def unblock_ip(ip: str, reason: str) -> UnblockResult:
     """Bỏ chặn 1 IP (khi chặn nhầm)."""
     ip = ip.strip()
     blocklist = read_state("blocklist")
@@ -158,7 +164,7 @@ def unblock_ip(ip: str, reason: str) -> dict:
     return {"status": "unblocked", "ip": ip, "reason": reason}
 
 def create_incident(ip: str, severity: str, status: str, summary: str, evidence: str,
-                    doc_ids: list[str]) -> dict:
+                    doc_ids: list[str]) -> CreateIncidentResult:
     """Tạo sự cố mới, mã tự tăng INC-0001, INC-0002... status chỉ được 'open' hoặc 'escalated'."""
     _check_severity(severity)
     if status not in AGENT_STATUSES:
@@ -166,6 +172,9 @@ def create_incident(ip: str, severity: str, status: str, summary: str, evidence:
     if not doc_ids:
         raise ValueError("doc_ids không được rỗng: phải ghi playbook làm căn cứ")
     incidents = read_state("incidents")
+    for old in incidents:                        # 1 IP chỉ có 1 sự cố đang mở: gọi lại thì trả về sự cố cũ
+        if old["ip"] == ip.strip() and old["status"] in AGENT_STATUSES:
+            return {"status": "already_exists", "incident_id": old["incident_id"], "incident": old}
     incident = {"incident_id": f"INC-{len(incidents) + 1:04d}", "created_at": NOW.isoformat(),
                 "ip": ip.strip(), "severity": severity, "status": status,
                 "summary": summary, "evidence": evidence, "doc_ids": doc_ids}
@@ -173,7 +182,7 @@ def create_incident(ip: str, severity: str, status: str, summary: str, evidence:
     write_state("incidents", incidents)
     return {"status": "created", "incident_id": incident["incident_id"], "incident": incident}
 
-def lock_account(username: str, reason: str, duration_minutes: int = None) -> dict:
+def lock_account(username: str, reason: str, duration_minutes: int = None) -> LockResult:
     """Khoá 1 tài khoản. duration_minutes=None: khoá đến khi trưởng ca mở (SEC-10)."""
     if duration_minutes is not None and duration_minutes <= 0:
         raise ValueError("duration_minutes phải > 0")
@@ -199,4 +208,4 @@ if __name__ == "__main__":
         r = count_failed_logins(ip, w)
         print(f"{ip:15} cửa sổ {w:2} phút: tổng {r['total_failed']:2}, "
               f"max {r['max_failed_in_window']:2} lần, {r['max_distinct_users_in_window']:2} username")
-    print(query_auth_logs(ip="203.0.113.200", limit=2))
+    print(query_auth_logs(ip="203.0.113.200", limit=2))

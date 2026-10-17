@@ -1,4 +1,4 @@
-import time, sys, os, json, urllib.request
+import time, sys, os, json, urllib.request, urllib.error
 from pathlib import Path
 from dotenv import load_dotenv
 import truststore
@@ -35,6 +35,8 @@ def _post(body): # Lấy text và usage sd trong call llm
     )
     with urllib.request.urlopen(req, timeout=60) as resp:
         data=json.loads(resp.read())
+    if not data.get("choices"):              # phản hồi lạ (vd lỗi bọc trong JSON 200) -> coi như lỗi tạm thời, thử lại
+        raise ValueError(f"phản hồi không có 'choices': {str(data)[:200]}")
     msg = data["choices"][0]["message"]
     text = msg.get("content") or ""
     usage = data.get("usage",{})
@@ -96,8 +98,10 @@ def call_llm(messages, retries=5, use_tools=True):  # judge gọi với use_tool
                     raise RuntimeError(f"LLM bắt chờ {wait:.0f} giây, quá lâu nên dừng")
             if e.code != 429 and e.code < 500:
                 raise                               # lỗi do mình (400/401/403): dừng ngay
-        except (urllib.error.URLError, TimeoutError) as e:
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
             print(f"[llm] lỗi mạng: {e}", file=sys.stderr)
+        except ValueError as e:                    # body không phải JSON hoặc thiếu 'choices'
+            print(f"[llm] phản hồi hỏng: {e}", file=sys.stderr)
         time.sleep(wait)                          # đợi đến khi chạy đc thì thôi
     raise RuntimeError(f"Gọi LLM thất bại sau {retries} lần")
 

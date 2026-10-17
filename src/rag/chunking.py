@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-DOCS_DIR = "data/docs"
+DOCS_DIR = Path(__file__).resolve().parents[2] / "data" / "docs"   # đường dẫn tuyệt đối: chạy từ thư mục nào cũng đúng
 SKIP_SECTIONS = ("Tham khảo", "Lịch sử thay đổi")
 
 @dataclass
@@ -14,7 +14,7 @@ class Document:
     title: str = ""
     source: str = ""
     metadata: dict = field(default_factory=dict)
-    created_at: Optional[datetime] = field(default_factory=dict)
+    created_at: Optional[datetime] = None
 
 @dataclass 
 class DocumentChunk: 
@@ -111,6 +111,11 @@ def split_sections(body: str) -> list[tuple[str, str]]:
 
     return sections
 
+# Lý do chunking theo mục "##" (không cắt cố định 512 ký tự như chunk_fixed):
+# 1. Mỗi mục của playbook là 1 quy định trọn vẹn (ngưỡng, mức độ, cách xử lý); cắt giữa chừng sẽ tách con số khỏi ngữ cảnh của nó.
+# 2. Mỗi chunk được gắn tiêu đề "[SEC-xx vX.Y — tên]" để LLM luôn thấy phiên bản và trích đúng nguồn, tránh nhầm SEC-01 cũ với SEC-02 mới.
+# 3. Bỏ mục "Tham khảo" và "Lịch sử thay đổi" vì chỉ là nhiễu khi tìm kiếm.
+# 4. Playbook ngắn nên 10 file chỉ ra 57 chunk, mỗi chunk vừa đủ để nhúng và đọc trong 1 lần.
 def chunk_by_section(doc: Document) -> list[DocumentChunk]:
     chunks = []
     for heading, text in split_sections (doc.content) :
@@ -130,9 +135,9 @@ def chunk_by_section(doc: Document) -> list[DocumentChunk]:
 
     return chunks
 
-def chunk_all(docs_dir: str = DOCS_DIR) -> list[DocumentChunk]:
+def chunk_all(docs_dir: str | Path = DOCS_DIR) -> list[DocumentChunk]:
     all_chunks = []
-    for path in sorted(Path(DOCS_DIR).glob("*.md")):
+    for path in sorted(Path(docs_dir).glob("*.md")):
         doc = load_document (path)
         chunks = chunk_by_section(doc)
         all_chunks.extend(chunks)
@@ -141,4 +146,4 @@ def chunk_all(docs_dir: str = DOCS_DIR) -> list[DocumentChunk]:
 
 if __name__ == "__main__":
     chunks = chunk_all()
-   
+   
