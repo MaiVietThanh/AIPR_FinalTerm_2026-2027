@@ -26,7 +26,7 @@ def dense_search(query: str, chunks: list, matrix, top_k: int = 3,
     return results[:top_k]                                          
 
 
-# ==== Đổi (vị trí, điểm) ====
+# Đổi vị trí, điểm
 def _to_dict(chunk, score: float) -> dict:
     md = chunk.metadata                                              # front-matter + "section" (từ chunking.py)
     return {
@@ -41,7 +41,7 @@ def _to_dict(chunk, score: float) -> dict:
     }
 
 
-# ==== Hàm chính ====
+# Hàm chính sử dụng
 def search(query: str, mode: str = "hybrid", top_k: int = 3,
            only_active: bool = True, min_score: float | None = None) -> list[dict]:
     if mode not in ("dense", "hybrid"):                              # chặn giá trị lạ do LLM truyền
@@ -59,4 +59,3 @@ def search(query: str, mode: str = "hybrid", top_k: int = 3,
     ranked = [(i, s) for i, s in ranked if s >= min_score]           # Week3 search_with_threshold: score >= min_score
 
     return [_to_dict(CHUNKS[i], s) for i, s in ranked]               # list rỗng = không tìm thấy (Week7)
-

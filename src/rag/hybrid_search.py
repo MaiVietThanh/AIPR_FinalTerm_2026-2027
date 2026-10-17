@@ -1,3 +1,7 @@
+# Dựa trên bài lab W4 (w4/ex2_1_hybrid_search.py), chỉnh lại cho khớp search.py:
+#   - embed_text lấy từ embedding.py (Jina) thay vì Vector_Store của lớp
+#   - thêm tham số only_active để chỉ xét tài liệu status=active
+#   - matrix đã chuẩn hoá độ dài nên cosine = tích vô hướng (matrix @ q)
 import string
 import numpy as np
 from rank_bm25 import BM25Okapi
@@ -8,8 +12,8 @@ PUNCT = string.punctuation + "—–“”‘’…"          # dấu câu ASCII
 
 def tokenize(text: str) -> list[str]:
     text = text.lower().replace("/", " ")        # chữ thường; "lần/5" → "lần 5"
-    tokens = text.strip()                       
-    tokens = [t.strip(PUNCT) for t in tokens]    
+    tokens = text.split()                        # tách theo khoảng trắng thành list từ
+    tokens = [t.strip(PUNCT) for t in tokens]    # bỏ dấu câu dính ở hai đầu từ
     return [t for t in tokens if t]   
 
 def normalise_scores(scores: list[float]) -> list[float]:
@@ -65,5 +69,3 @@ def hybrid_search(
     # 4. Sắp giảm dần, lấy top_k (giống session 2)
     results.sort(key=lambda item: item[1], reverse=True)
     return results[:top_k]
-
-

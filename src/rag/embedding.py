@@ -1,4 +1,5 @@
 import os 
+import sys
 import requests
 import numpy as np 
 import time 
@@ -38,7 +39,7 @@ def _post_jina (texts: list[str], task: str, timeout: int =60) -> list[list[floa
     return [x["embedding"] for x in data]
 
 def _post_jina_with_retry (texts: list[str], task: str, max_retries: int =3)-> list[list[float]]:
-    for attempt in range (3): 
+    for attempt in range (max_retries + 1):    # 1 lần đầu + tối đa max_retries lần thử lại
         try:
             return _post_jina ( texts, task)
         except requests.exceptions.HTTPError as e: 
@@ -46,14 +47,14 @@ def _post_jina_with_retry (texts: list[str], task: str, max_retries: int =3)-> l
             co_the_retry = (status == 429) or (status>=500) # chỉ khi gặp lỗi quá tải/lỗi server thì mới retry lại
             if co_the_retry and attempt < max_retries:
                 delay = 2 ** attempt + random.uniform(0,1)
-                print(f"HTTP {status}. Thử lại sau {delay:.1f}s (lần {attempt+1}/{max_retries})...")
+                print(f"HTTP {status}. Thử lại sau {delay:.1f}s (lần {attempt+1}/{max_retries})...", file=sys.stderr)
                 time.sleep(delay)
             else: 
                 raise
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             if attempt < max_retries:
                 delay = 2 ** attempt + random.uniform(0,1)
-                print(f"Lỗi mạng. Thử lại sau {delay:.1f}s (lần {attempt+1}/{max_retries})...")
+                print(f"Lỗi mạng. Thử lại sau {delay:.1f}s (lần {attempt+1}/{max_retries})...", file=sys.stderr)
                 time.sleep(delay)
             else: 
                 raise
@@ -122,11 +123,26 @@ def load_or_build_index(docs_dir: str = "data/docs", index_dir: str = INDEX_DIR,
         if meta["hash"] == current_hash and matrix.shape[0] == len(chunks):   # hash khớp VÀ số hàng khớp
             for i, c in enumerate(chunks):
                 c.embedding = matrix[i]                                  # gắn lại vector cho từng chunk
-            print(f"[embedding] Dùng cache: {len(chunks)} chunk, không gọi API")
+            print(f"[embedding] Dùng cache: {len(chunks)} chunk, không gọi API", file=sys.stderr)
             return chunks, matrix                                        # xong, thoát sớm
-        print("[embedding] Playbook hoặc model đã đổi → embed lại")      # có cache nhưng đã cũ
+        print("[embedding] Playbook hoặc model đã đổi → embed lại", file=sys.stderr)      # có cache nhưng đã cũ
 
     matrix = embed_chunks(chunks)                                        # gọi Jina (57 chunk → 2 lần gọi)
     save_index(matrix, chunks, current_hash, index_dir)                  # lưu cho lần sau
-    print(f"[embedding] Đã build và lưu index: {matrix.shape}")
+    print(f"[embedding] Đã build và lưu index: {matrix.shape}", file=sys.stderr)
     return chunks, matrix
+
+
+if __name__ == "__main__":
+    sentences = [
+        "Ngưỡng chặn IP theo SEC-02 là 5 lần thất bại trong 5 phút",
+        "Dải IP nội bộ của UTE gồm 10.0.0.0/8",
+        "Tài khoản admin bị nhắm thì mức Critical",
+        "Password spraying là thử nhiều username trong 30 phút",
+        "Bỏ chặn IP theo quy trình SEC-06",
+    ]
+    M_nho = batch_embed_text(sentences, batch_size=2)    # 3 lần gọi API
+    M_lon = batch_embed_text(sentences, batch_size=32)   # 1 lần gọi API
+    print(M_nho.shape)                                   # kích thước ma trận
+    print(np.linalg.norm(M_nho, axis=1))                 # độ dài từng hàng
+    print(np.allclose(M_nho, M_lon, atol=1e-3))          # chia batch có làm lệch thứ tự không?
