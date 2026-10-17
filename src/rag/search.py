@@ -59,4 +59,3 @@ def search(query: str, mode: str = "hybrid", top_k: int = 3,
     ranked = [(i, s) for i, s in ranked if s >= min_score]           # Week3 search_with_threshold: score >= min_score
 
     return [_to_dict(CHUNKS[i], s) for i, s in ranked]               # list rỗng = không tìm thấy (Week7)
-
