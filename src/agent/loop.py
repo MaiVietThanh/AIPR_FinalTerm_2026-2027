@@ -50,16 +50,22 @@ def run_agent(question, call_tool, tools_text, tool_names, logger= None):
         {"role": "user", "content": question},
     ]
     tokens = 0
+    usage_sum = {"calls": 0, "prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0, "max_prompt": 0}   # USAGE cả câu hỏi
     for step in range(1, MAX_STEPS + 1):
         text, usage = call_llm(messages)                       # hỏi
         log("llm",step=step, output=text, usage=usage)
         tokens += usage.get("total_tokens", 0)
+        usage_sum["calls"] += 1
+        for k in ("prompt_tokens", "completion_tokens", "total_tokens"):
+            usage_sum[k] += usage.get(k, 0)
+        usage_sum["max_prompt"] = max(usage_sum["max_prompt"], usage.get("prompt_tokens", 0))   # request lớn nhất
         messages.append({"role": "assistant", "content": text})
         action = parse_action(text)                            # đọc
 
         if action.kind == "final":
             log("final", answer=action.text, steps=step, tokens=tokens)
-            return {"answer": action.text, "steps": step, "tokens": tokens, "messages": messages}
+            log("usage", **usage_sum)
+            return {"answer": action.text, "steps": step, "tokens": tokens, "usage": usage_sum, "messages": messages}
         if action.kind == "error":
             observation = "Error: " + action.text
         elif action.name not in tool_names:
@@ -85,8 +91,10 @@ def run_agent(question, call_tool, tools_text, tool_names, logger= None):
         log("observation", step=step, action=action.name, args=action.args, observation=observation)
         messages.append({"role": "user", "content": "Observation: " + observation})   # báo
 
+    log("final", answer=f"Dừng vì vượt quá {MAX_STEPS} bước.", steps=MAX_STEPS, tokens=tokens)
+    log("usage", **usage_sum)
     return {"answer": f"Dừng vì vượt quá {MAX_STEPS} bước.", "steps": MAX_STEPS,
-            "tokens": tokens, "messages": messages}
+            "tokens": tokens, "usage": usage_sum, "messages": messages}
 
 
 # Test thửu xem loop chạy đc chưa

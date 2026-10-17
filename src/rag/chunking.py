@@ -111,6 +111,11 @@ def split_sections(body: str) -> list[tuple[str, str]]:
 
     return sections
 
+# Lý do chunking theo mục "##" (không cắt cố định 512 ký tự như chunk_fixed):
+# 1. Mỗi mục của playbook là 1 quy định trọn vẹn (ngưỡng, mức độ, cách xử lý); cắt giữa chừng sẽ tách con số khỏi ngữ cảnh của nó.
+# 2. Mỗi chunk được gắn tiêu đề "[SEC-xx vX.Y — tên]" để LLM luôn thấy phiên bản và trích đúng nguồn, tránh nhầm SEC-01 cũ với SEC-02 mới.
+# 3. Bỏ mục "Tham khảo" và "Lịch sử thay đổi" vì chỉ là nhiễu khi tìm kiếm.
+# 4. Playbook ngắn nên 10 file chỉ ra 57 chunk, mỗi chunk vừa đủ để nhúng và đọc trong 1 lần.
 def chunk_by_section(doc: Document) -> list[DocumentChunk]:
     chunks = []
     for heading, text in split_sections (doc.content) :
