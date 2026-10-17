@@ -88,8 +88,8 @@ def load_document(path: str | Path) -> Document:
 
     
 
-
-def split_sections(body: str) -> list[tuple[str, str]]:
+# AI hỗ trợ viết hàm này
+def split_sections(body: str) -> list[tuple[str, str]]: 
     """Cắt thân bài thành danh sách (tiêu đề mục, nội dung mục)."""
     sections = []
     heading = None 
@@ -111,9 +111,6 @@ def split_sections(body: str) -> list[tuple[str, str]]:
 
     return sections
 
-
-
-
 def chunk_by_section(doc: Document) -> list[DocumentChunk]:
     chunks = []
     for heading, text in split_sections (doc.content) :
@@ -133,7 +130,6 @@ def chunk_by_section(doc: Document) -> list[DocumentChunk]:
 
     return chunks
 
-
 def chunk_all(docs_dir: str = DOCS_DIR) -> list[DocumentChunk]:
     all_chunks = []
     for path in sorted(Path(DOCS_DIR).glob("*.md")):
@@ -142,7 +138,6 @@ def chunk_all(docs_dir: str = DOCS_DIR) -> list[DocumentChunk]:
         all_chunks.extend(chunks)
 
     return all_chunks
-   
 
 if __name__ == "__main__":
     chunks = chunk_all()
