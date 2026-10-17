@@ -7,8 +7,7 @@ import logger
 from llm import call_llm
 from logger import RunLogger
 
-MAX_STEPS = 10
-MAX_OBS = 2000
+MAX_STEPS = 8
 _ROOT = Path(__file__).resolve().parents[2]
 SYSTEM_PROMPT = (_ROOT / "prompts" / "system.txt").read_text(encoding="utf-8") # promt đang trống nên bỏ qua
 
@@ -28,19 +27,6 @@ def _verify_args(name, args, result):
         except (ValueError, AttributeError):
             return {}
     return {}                       # get_blocklist không cần tham số
-
-def _count_objects(text):
-    # Đếm số object JSON nằm liền nhau trong 1 câu trả lời (model đôi khi viết 2 lệnh gọi tool 1 lúc)
-    dec, i, n = json.JSONDecoder(), 0, 0
-    while True:
-        i = text.find("{", i)
-        if i < 0:
-            return n
-        try:
-            _, i = dec.raw_decode(text, i)
-            n += 1
-        except ValueError:
-            i += 1
 
 def run_agent(question, call_tool, tools_text, tool_names, logger= None):
     log = logger.log if logger else (lambda *a, **k: None)   # không truyền logger thì bỏ qua
@@ -77,11 +63,6 @@ def run_agent(question, call_tool, tools_text, tool_names, logger= None):
                 except Exception as e:
                     vresult = f"Error: {e}"
                 observation += f"\nVerify ({vname}): {vresult}"
-        if len(observation) > MAX_OBS:                   # chống tràn context / vượt giới hạn token
-            observation = observation[:MAX_OBS] + " ...(đã cắt bớt)"
-        if action.kind != "error" and _count_objects(text) > 1:   # chỉ chạy lệnh đầu tiên -> báo cho model biết
-            observation += (f"\nLưu ý: lượt này bạn viết nhiều lệnh, chỉ lệnh đầu tiên ({action.name}) được chạy. "
-                            "Các lệnh sau CHƯA chạy, hãy gọi lại từng lệnh ở lượt tiếp theo.")
         log("observation", step=step, action=action.name, args=action.args, observation=observation)
         messages.append({"role": "user", "content": "Observation: " + observation})   # báo
 

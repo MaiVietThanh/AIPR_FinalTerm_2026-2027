@@ -4,9 +4,7 @@ import copy, csv, json, sys
 from datetime import datetime
 from pathlib import Path
 
-SRC = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(SRC))            # để import được src/config.py
-sys.path.insert(0, str(SRC / "rag"))    # để import được search.py của Tuyết
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))   # để import được src/config.py
 from config import LOG_FILE, STATE_DIR
 
 def _acc(username, is_admin=False):

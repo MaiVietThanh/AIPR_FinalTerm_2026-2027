@@ -1,7 +1,0 @@
-mcp>=1.20,<2        # MCP server/client, phải dưới bản 2 vì cần FastMCP
-python-dotenv       # đọc .env (llm.py, embedding.py)
-requests            # gọi API embedding Jina (embedding.py)
-truststore          # sửa lỗi SSL khi gọi Groq/Jina trên Windows (llm.py)
-numpy               # ma trận embedding .npy + cosine
-rank_bm25           # BM25 cho hybrid search
-matplotlib          # đồ thị eval ở bước run_eval (điểm cộng)
