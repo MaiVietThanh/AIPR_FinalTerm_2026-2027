@@ -1,0 +1,18 @@
+
+====================================================================================================
+Câu hỏi: Quy trình xử lý khi công ty bị tấn công DDoS là gì?
+====================================================================================================
+
+[Bước 1]
+Thought     : User asks about DDoS process, not in scope. Must respond "Không tìm thấy trong tài
+              liệu".
+Action      : (không đọc được lệnh)
+Observation : Error: Không đọc được JSON. Hãy trả lời đúng 1 object JSON.
+
+[Bước 2]
+Thought     : Không tìm thấy trong tài liệu
+
+----------------------------------------------------------------------------------------------------
+Final Answer: Không tìm thấy trong tài liệu
+(2 bước, 4707 token)
+USAGE: 2 lần gọi LLM, prompt 4605 + completion 102 token, prompt lớn nhất 2317

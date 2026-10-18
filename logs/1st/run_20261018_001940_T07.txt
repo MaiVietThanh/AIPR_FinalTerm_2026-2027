@@ -1,0 +1,134 @@
+
+====================================================================================================
+Câu hỏi: Kiểm tra IP 198.51.100.20 và xử lý theo playbook.
+====================================================================================================
+
+[Bước 1]
+Thought     : We need thresholds. First search docs for SEC-02, SEC-09, SEC-10, SEC-04, SEC-03,
+              SEC-05. Use search_docs.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-02 threshold brute-force",
+                "top_k": 5
+              }
+Observation : {"query":"SEC-02 threshold brute-force","mode":"hybrid","results":[{"chunk_id":"SEC-04#0","doc_id":"SEC-04","version":"1.0","status":"active","title":"Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force","section":"## 1. Mục đích và phạm vi","text":"[SEC-04 v1.0 — Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force]\n## 1. Mục đích và phạm vi\nTài liệu này quy định cách xếp mức độ nghiêm trọng (severity) của một sự việc brute-force và thời gian chặn tương ứng. Tài liệu ban hành lần đầu cùng ngày với playbook SEC-02 phiên bản 2.0 và được dùng cùng playbook đó: SEC-02 quyết định có phải tấn công hay không, SEC-04 quyết định mức độ và thời gian chặn.","score":0.7562},{"chunk_id":"SEC-02#7","doc_id":"SEC-02","version":"2.0","status":"active","title":"Playbook xử lý tấn công brute-force đăng nhập","section":"## 8. Thay đổi so với phiên bản 1.0","text":"[SEC-02 v2.0 — Playbook xử lý tấn công brute-force đăng nhập]\n## 8. Thay đổi so với phiên bản 1.0\n- Ngưỡng phát hiện giảm từ 10 xuống 5 lần thất bại trong 5 phút.\n- Thời gian chặn không còn cố định 24 giờ mà theo mức độ nghiêm trọng ở SEC-04.\n- Bổ sung quy tắc không chặn IP nội bộ và IP đối tác, thay vào đó phải leo thang.\n- Bổ sung yêu cầu xác minh sau khi xử lý.","score":0.7008},{"chunk_id":"SEC-02#3","doc_id":"SEC-02","version":"2.0","status":"active","title":"Playbook xử lý tấn công brute-force đăng nhập","section":"## 4. Ngưỡng phát hiện","text":"[SEC-02 v2.0 — Playbook xử lý tấn công brute-force đăng nhập]\n## 4. Ngưỡng phát hiện\nMột địa chỉ IP bị coi là đang tấn công brute-force khi có từ 5 lần đăng nhập thất bại trở lên trong cửa sổ 5 phút. Dưới ngưỡng này thì không kết luận là tấn công và không thực hiện chặn.","score":0.6902},{"chunk_id":"SEC-04#1","doc_id":"SEC-04","version":"1.0","status":"active","title":"Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force","section":"## 2. Số lần thất bại dùng để xếp mức","text":"[SEC-04 v1.0 — Ma trận mức độ nghiêm trọng (severity) c ...(đã cắt bớt)
+
+[Bước 2]
+Thought     : We need thresholds for other types too. Search SEC-09 and SEC-10.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-09 password spraying threshold",
+                "top_k": 5
+              }
+Observation : {"query":"SEC-09 password spraying threshold","mode":"hybrid","results":[{"chunk_id":"SEC-09#0","doc_id":"SEC-09","version":"1.0","status":"active","title":"Playbook xử lý tấn công password spraying","section":"## 1. Mục đích và phạm vi","text":"[SEC-09 v1.0 — Playbook xử lý tấn công password spraying]\n## 1. Mục đích và phạm vi\nTài liệu này quy định cách đội SOC phát hiện và xử lý tấn công password spraying vào các dịch vụ đăng nhập của UTE (SSH, VPN, cổng web nội bộ). Tài liệu bổ sung cho playbook brute-force SEC-02, vì password spraying có thể không vượt ngưỡng của SEC-02.","score":0.7625},{"chunk_id":"SEC-09#2","doc_id":"SEC-09","version":"1.0","status":"active","title":"Playbook xử lý tấn công password spraying","section":"## 3. Cách đếm và ngưỡng phát hiện","text":"[SEC-09 v1.0 — Playbook xử lý tấn công password spraying]\n## 3. Cách đếm và ngưỡng phát hiện\nSố liệu được đếm theo địa chỉ IP nguồn trong một cửa sổ 30 phút liên tục bất kỳ. Một địa chỉ IP bị coi là đang password spraying khi đăng nhập thất bại vào từ 10 username khác nhau trở lên trong cửa sổ 30 phút. Chỉ đếm số username khác nhau có ít nhất một lần thất bại, không đếm tổng số lần thất bại.","score":0.7243},{"chunk_id":"SEC-09#1","doc_id":"SEC-09","version":"1.0","status":"active","title":"Playbook xử lý tấn công password spraying","section":"## 2. Định nghĩa password spraying","text":"[SEC-09 v1.0 — Playbook xử lý tấn công password spraying]\n## 2. Định nghĩa password spraying\nPassword spraying là hành vi thử một hoặc vài mật khẩu phổ biến trên rất nhiều tài khoản khác nhau. Mỗi tài khoản chỉ bị thử sai một vài lần nên không chạm ngưỡng khoá tài khoản của SEC-07. Dấu hiệu trong log là một địa chỉ IP đăng nhập thất bại vào nhiều username khác nhau, thường rải trong khoảng thời gian dài hơn brute-force.","score":0.707},{"chunk_id":"SEC-09#3","doc_id":"SEC-09","version":"1.0","status":"active","title":"Playbook xử lý tấn công password spraying","section":"## 4. Mức độ nghiêm trọng và thời gian ch ...(đã cắt bớt)
+
+[Bước 3]
+Thought     : We need count_failed_logins for IP.
+Action      : count_failed_logins
+Action Input: {
+                "ip": "198.51.100.20",
+                "lookback_minutes": 1440,
+                "window_minutes": 5
+              }
+Observation : {
+                "ip": "198.51.100.20",
+                "ip_type": "partner",
+                "window_minutes": 5,
+                "total_failed": 12,
+                "max_failed_in_window": 11,
+                "max_distinct_users_in_window": 2,
+                "max_distinct_users_in_30min": 2,
+                "usernames": [
+                  "api_x",
+                  "svc_x"
+                ],
+                "first_failed": "2026-10-01T08:45:00",
+                "last_failed": "2026-10-01T08:50:00",
+                "success_after_fail": []
+              }
+
+[Bước 4]
+Thought     : We have IP type partner, so internal/partner => no block, create escalated incident.
+              Need severity? Determine attack type: brute-force threshold 5 fails in 5min, we have
+              max_failed_in_window 11 >=5 => brute-force detected. Severity from SEC-04 matrix not
+              fetched but we can assume maybe Medium? Not fetched. We need severity for incident.
+              Could fetch SEC-04 severity mapping but time low. Might assume Medium. But need source
+              doc. We haven't fetched severity. Could search SEC-04 severity mapping.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-04 severity matrix brute-force medium high critical",
+                "top_k": 5
+              }
+Observation : {"query":"SEC-04 severity matrix brute-force medium high critical","mode":"hybrid","results":[{"chunk_id":"SEC-04#2","doc_id":"SEC-04","version":"1.0","status":"active","title":"Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force","section":"## 3. Ma trận severity","text":"[SEC-04 v1.0 — Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force]\n## 3. Ma trận severity\n| Mức | Điều kiện | Thời gian chặn | Tạo sự cố (incident) |\n|---|---|---|---|\n| Medium | 5 – 19 lần thất bại | 1 giờ (60 phút) | Bắt buộc, trạng thái `open` |\n| High | 20 – 49 lần thất bại | 24 giờ (1440 phút) | Bắt buộc, trạng thái `open` |\n| Critical | Từ 50 lần thất bại trở lên, hoặc có nhắm vào tài khoản quản trị | 7 ngày (10080 phút) | Bắt buộc, trạng thái `escalated` |","score":0.8321},{"chunk_id":"SEC-04#0","doc_id":"SEC-04","version":"1.0","status":"active","title":"Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force","section":"## 1. Mục đích và phạm vi","text":"[SEC-04 v1.0 — Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force]\n## 1. Mục đích và phạm vi\nTài liệu này quy định cách xếp mức độ nghiêm trọng (severity) của một sự việc brute-force và thời gian chặn tương ứng. Tài liệu ban hành lần đầu cùng ngày với playbook SEC-02 phiên bản 2.0 và được dùng cùng playbook đó: SEC-02 quyết định có phải tấn công hay không, SEC-04 quyết định mức độ và thời gian chặn.","score":0.6944},{"chunk_id":"SEC-04#4","doc_id":"SEC-04","version":"1.0","status":"active","title":"Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force","section":"## 5. Quy tắc khi nhiều điều kiện cùng thoả","text":"[SEC-04 v1.0 — Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force]\n## 5. Quy tắc khi nhiều điều kiện cùng thoả\nKhi một sự việc thoả điều kiện của nhiều mức, luôn chọn mức cao nhất. Ví dụ: 25 lần thất bại (High) nhưng có nhắm vào `root` thì xếp Critical.","score":0.6745},{"chunk_id":"SEC-04#3","doc_id":"SEC-04","version":"1.0","status":"active","title ...(đã cắt bớt)
+
+[Bước 5]
+Thought     : Create escalated incident for partner IP brute-force
+Action      : create_incident
+Action Input: {
+                "ip": "198.51.100.20",
+                "severity": "Medium",
+                "status": "escalated",
+                "summary": "Brute-force login attempts detected from partner IP",
+                "evidence": "11 failed logins within 5 minutes (threshold 5)",
+                "doc_ids": [
+                  "SEC-02",
+                  "SEC-04",
+                  "SEC-03",
+                  "SEC-05"
+                ]
+              }
+Observation : {
+                "status": "created",
+                "incident_id": "INC-0001",
+                "incident": {
+                  "incident_id": "INC-0001",
+                  "created_at": "2026-10-01T10:00:00",
+                  "ip": "198.51.100.20",
+                  "severity": "Medium",
+                  "status": "escalated",
+                  "summary": "Brute-force login attempts detected from partner IP",
+                  "evidence": "11 failed logins within 5 minutes (threshold 5)",
+                  "doc_ids": [
+                    "SEC-02",
+                    "SEC-04",
+                    "SEC-03",
+                    "SEC-05"
+                  ]
+                }
+              }
+              Verify (get_incident): {
+                "count": 1,
+                "incidents": [
+                  {
+                    "incident_id": "INC-0001",
+                    "created_at": "2026-10-01T10:00:00",
+                    "ip": "198.51.100.20",
+                    "severity": "Medium",
+                    "status": "escalated",
+                    "summary": "Brute-force login attempts detected from partner IP",
+                    "evidence": "11 failed logins within 5 minutes (threshold 5)",
+                    "doc_ids": [
+                      "SEC-02",
+                      "SEC-04",
+                      "SEC-03",
+                      "SEC-05"
+                    ]
+                  }
+                ]
+              }
+
+[Bước 6]
+Thought     : Partner IP, do not block, incident already created
+
+----------------------------------------------------------------------------------------------------
+Final Answer: Đã tạo incident ID INC-0001 với mức độ Medium, trạng thái escalated cho IP
+              198.51.100.20 (partner) do phát hiện brute‑force (11 lần thất bại trong 5 phút). Không
+              chặn IP vì đây là IP nội bộ/đối tác. (Nguồn: SEC-02 v2.0, SEC-03, SEC-04 v1.0, SEC-05)
+(6 bước, 22769 token)
+USAGE: 6 lần gọi LLM, prompt 22080 + completion 689 token, prompt lớn nhất 4836

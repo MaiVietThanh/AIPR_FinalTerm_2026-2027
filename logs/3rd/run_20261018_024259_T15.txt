@@ -1,0 +1,53 @@
+
+====================================================================================================
+Câu hỏi: Ngưỡng phát hiện brute-force hiện tại là bao nhiêu?
+====================================================================================================
+
+[Bước 1]
+Thought     : We need to search docs SEC-02.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-02",
+                "top_k": 5
+              }
+Observation : {
+                "results": [
+                  {
+                    "doc_id": "SEC-04",
+                    "version": "1.0",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này quy định cách xếp mức độ nghiêm trọng (severity) của một sự việc brute-force và thời gian chặn tương ứng. Tài liệu ban hành lần đầu cùng ngày với playbook SEC-02 phiên bản 2.0 và được dùng cùng playbook đó: SEC-02 quyết định có phải tấn công hay không, SEC-04 quyết định mức độ và thời gian chặn."
+                  },
+                  {
+                    "doc_id": "SEC-02",
+                    "version": "2.0",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này quy định cách đội SOC phát hiện và xử lý tấn công brute-force vào các dịch vụ đăng nhập của UTE (SSH, VPN, cổng web nội bộ). Phạm vi chỉ gồm tấn công dò mật khẩu qua đăng nhập. Các loại tấn công khác (ransomware, DDoS, phishing…) không thuộc tài liệu này.\n\nPhiên bản 2.0 có hiệu lực từ ngày 2026-01-15 và thay thế hoàn toàn SEC-01 phiên bản 1.0."
+                  },
+                  {
+                    "doc_id": "SEC-02",
+                    "version": "2.0",
+                    "text": "## 8. Thay đổi so với phiên bản 1.0\n- Ngưỡng phát hiện giảm từ 10 xuống 5 lần thất bại trong 5 phút.\n- Thời gian chặn không còn cố định 24 giờ mà theo mức độ nghiêm trọng ở SEC-04.\n- Bổ sung quy tắc không chặn IP nội bộ và IP đối tác, thay vào đó phải leo thang.\n- Bổ sung yêu cầu xác minh sau khi xử lý."
+                  },
+                  {
+                    "doc_id": "SEC-09",
+                    "version": "1.0",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này quy định cách đội SOC phát hiện và xử lý tấn công password spraying vào các dịch vụ đăng nhập của UTE (SSH, VPN, cổng web nội bộ). Tài liệu bổ sung cho playbook brute-force SEC-02, vì password spraying có thể không vượt ngưỡng của SEC-02."
+                  },
+                  {
+                    "doc_id": "SEC-03",
+                    "version": "1.3",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này liệt kê các dải địa chỉ IP được coi là nội bộ hoặc đối tác của UTE. Đội SOC dùng danh mục này để quyết định một địa chỉ IP có được phép chặn hay không theo playbook brute-force SEC-02."
+                  }
+                ]
+              }
+
+[Bước 2]
+Thought     : Need to extract threshold from SEC-02 change note: threshold reduced from 10 to 5
+              failures in 5 minutes. So answer threshold is 5. Need source SEC-02 v2.0.
+
+----------------------------------------------------------------------------------------------------
+Final Answer: Ngưỡng phát hiện brute‑force hiện tại là 5 lần thất bại trong vòng 5 phút (SEC-02
+              v2.0).
+(2 bước, 5776 token)
+USAGE: 2 lần gọi LLM, prompt 5622 + completion 154 token, prompt lớn nhất 3118

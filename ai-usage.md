@@ -19,7 +19,7 @@ Mức độ:
 
 | Phần | Người phụ trách | Mức độ | Ghi chú |
 | --- | --- | --- | --- |
-| `src/rag/chunking.py`, `embedding.py`, `search.py` | Tuyết | |Tuyết tự khai. Đoạn chú thích lý do chunking trong `chunking.py` do AI viết |
+| `src/rag/chunking.py`, `embedding.py`, `search.py` | Tuyết | Tái dùng code lab |Tuyết tự khai. Đoạn chú thích lý do chunking trong `chunking.py` do AI viết |
 | `src/rag/hybrid_search.py` | Tuyết | Tái dùng code lab | Lấy từ bài lab W4 `ex2_1_hybrid_search.py` của môn học, chỉnh cho dữ liệu của nhóm với sự hỗ trợ của AI |
 | `src/config.py`, `src/mcp_server/store.py`, `server.py` | Phát | AI hướng dẫn | AI sửa lỗi treo `search_docs` trên Windows (import RAG khi server khởi động) |
 | `src/mcp_server/tools.py` | Phát | AI hướng dẫn, AI sửa lỗi | 6 tool đọc và 4 tool ghi theo từng bước; AI thêm `ip_type`, `success_after_fail`, `max_distinct_users_in_30min` vào `count_failed_logins` sau khi phân tích kết quả eval |
@@ -42,7 +42,7 @@ Mức độ:
 
 | Phần | Mức độ | Ghi chú |
 | --- | --- | --- |
-| `report.docx` | Tự viết |  |
+| `report.docx` | AI hướng dẫn |  |
 
 ## Cam kết
 

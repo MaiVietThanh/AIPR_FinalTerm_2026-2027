@@ -1,0 +1,114 @@
+
+====================================================================================================
+Câu hỏi: IP 192.0.2.10 có dấu hiệu tấn công không?
+====================================================================================================
+
+[Bước 1]
+Thought     : We need to check logs. First get thresholds for brute-force etc. Search docs SEC-02.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-02",
+                "top_k": 5
+              }
+Observation : {
+                "results": [
+                  {
+                    "doc_id": "SEC-04",
+                    "version": "1.0",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này quy định cách xếp mức độ nghiêm trọng (severity) của một sự việc brute-force và thời gian chặn tương ứng. Tài liệu ban hành lần đầu cùng ngày với playbook SEC-02 phiên bản 2.0 và được dùng cùng playbook đó: SEC-02 quyết định có phải tấn công hay không, SEC-04 quyết định mức độ và thời gian chặn."
+                  },
+                  {
+                    "doc_id": "SEC-02",
+                    "version": "2.0",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này quy định cách đội SOC phát hiện và xử lý tấn công brute-force vào các dịch vụ đăng nhập của UTE (SSH, VPN, cổng web nội bộ). Phạm vi chỉ gồm tấn công dò mật khẩu qua đăng nhập. Các loại tấn công khác (ransomware, DDoS, phishing…) không thuộc tài liệu này.\n\nPhiên bản 2.0 có hiệu lực từ ngày 2026-01-15 và thay thế hoàn toàn SEC-01 phiên bản 1.0."
+                  },
+                  {
+                    "doc_id": "SEC-02",
+                    "version": "2.0",
+                    "text": "## 8. Thay đổi so với phiên bản 1.0\n- Ngưỡng phát hiện giảm từ 10 xuống 5 lần thất bại trong 5 phút.\n- Thời gian chặn không còn cố định 24 giờ mà theo mức độ nghiêm trọng ở SEC-04.\n- Bổ sung quy tắc không chặn IP nội bộ và IP đối tác, thay vào đó phải leo thang.\n- Bổ sung yêu cầu xác minh sau khi xử lý."
+                  },
+                  {
+                    "doc_id": "SEC-09",
+                    "version": "1.0",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này quy định cách đội SOC phát hiện và xử lý tấn công password spraying vào các dịch vụ đăng nhập của UTE (SSH, VPN, cổng web nội bộ). Tài liệu bổ sung cho playbook brute-force SEC-02, vì password spraying có thể không vượt ngưỡng của SEC-02."
+                  },
+                  {
+                    "doc_id": "SEC-03",
+                    "version": "1.3",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này liệt kê các dải địa chỉ IP được coi là nội bộ hoặc đối tác của UTE. Đội SOC dùng danh mục này để quyết định một địa chỉ IP có được phép chặn hay không theo playbook brute-force SEC-02."
+                  }
+                ]
+              }
+
+[Bước 2]
+Thought     : We need count_failed_logins for IP.
+Action      : count_failed_logins
+Action Input: {
+                "ip": "192.0.2.10",
+                "lookback_minutes": 1440,
+                "window_minutes": 5
+              }
+Observation : {
+                "ip": "192.0.2.10",
+                "ip_type": "external",
+                "window_minutes": 5,
+                "total_failed": 0,
+                "max_failed_in_window": 0,
+                "max_distinct_users_in_window": 0,
+                "max_distinct_users_in_30min": 0,
+                "usernames": [],
+                "first_failed": null,
+                "last_failed": null,
+                "success_after_fail": []
+              }
+
+[Bước 3]
+Thought     : We have no failed attempts, so no attack. Need to answer no evidence. Must search
+              SEC-05 for escalation info.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-05",
+                "top_k": 5
+              }
+Observation : {
+                "results": [
+                  {
+                    "doc_id": "SEC-05",
+                    "version": "1.1",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này quy định khi nào đội SOC phải leo thang một sự việc cho con người (trưởng ca SOC) xử lý thay vì tự động chặn, và sự cố leo thang phải có những thông tin gì. Tài liệu áp dụng cho các sự việc đăng nhập bất thường được xử lý theo playbook brute-force SEC-02."
+                  },
+                  {
+                    "doc_id": "SEC-04",
+                    "version": "1.0",
+                    "text": "## 6. Áp dụng với IP nội bộ và đối tác\nIP nội bộ và đối tác (theo SEC-03) vẫn được xếp mức theo ma trận này để ghi vào sự cố, nhưng không áp dụng thời gian chặn. Các IP này không bị chặn mà phải leo thang theo SEC-05."
+                  },
+                  {
+                    "doc_id": "SEC-02",
+                    "version": "2.0",
+                    "text": "## 6. Xử lý IP nội bộ và IP đối tác\nKhông được chặn địa chỉ IP thuộc dải nội bộ hoặc dải đối tác, kể cả khi vượt ngưỡng. Danh mục các dải này được quy định trong SEC-03. Với các IP này, chuyên viên SOC phải tạo sự cố ở trạng thái leo thang (escalated) và chuyển cho con người xử lý theo quy trình SEC-05."
+                  },
+                  {
+                    "doc_id": "SEC-05",
+                    "version": "1.1",
+                    "text": "## 2. Các trường hợp bắt buộc leo thang\nPhải leo thang khi gặp một trong các trường hợp sau:\n- Địa chỉ IP vượt ngưỡng thuộc dải nội bộ hoặc dải đối tác theo SEC-03.\n- Sự việc được xếp mức Critical theo SEC-04."
+                  },
+                  {
+                    "doc_id": "SEC-05",
+                    "version": "1.1",
+                    "text": "## 5. Thông tin bắt buộc trong sự cố\nMỗi sự cố phải có đủ các thông tin sau:\n- Địa chỉ IP nguồn.\n- Số lần đăng nhập thất bại.\n- Khung thời gian xảy ra (thời điểm bắt đầu và kết thúc).\n- Mức độ nghiêm trọng theo SEC-04.\n- Mã các tài liệu làm căn cứ (ví dụ SEC-02, SEC-04).\n- Tóm tắt hành động đã làm (đã chặn hay chưa chặn, lý do).\n\nSự cố thiếu một trong các thông tin trên bị coi là chưa hợp lệ."
+                  }
+                ]
+              }
+
+[Bước 4]
+Thought     : No evidence of attack
+
+----------------------------------------------------------------------------------------------------
+Final Answer: Không có dấu hiệu tấn công từ IP 192.0.2.10 dựa trên log hiện có (0 lần đăng nhập thất
+              bại). Vì thiếu bằng chứng, không thực hiện chặn hay tạo sự cố. (SEC-05 v1.1)
+(4 bước, 13002 token)
+USAGE: 4 lần gọi LLM, prompt 12719 + completion 283 token, prompt lớn nhất 3842

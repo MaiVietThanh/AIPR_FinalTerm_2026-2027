@@ -1,5 +1,7 @@
 # AIPR FINAL PROJECT 2026-2027 — SOC Agent
 
+**GitHub:** https://github.com/MaiVietThanh/AIPR_FinalTerm_2026-2027
+
 Trợ lý SOC của công ty **UTE**: đọc playbook bảo mật (RAG), đọc log đăng nhập qua MCP server, phát hiện brute-force / password spraying / tài khoản bị chiếm, rồi chặn IP, khoá tài khoản, tạo sự cố và tự đọc lại để kiểm chứng.
 
 | Thành viên              | Vai trò                                  | Branch  |
@@ -32,7 +34,7 @@ Máy không có `make` (Windows) thì chạy trực tiếp:
 | `make eval`        | `python scripts/run_eval.py`                                   |
 | `make eval-resume` | `python scripts/run_eval.py --resume` (chạy tiếp khi bị dừng do hết token) |
 
-Kết quả eval: `results/eval.csv` và `results/eval.png`. Trace từng lần chạy: `logs/run_<timestamp>.jsonl`.
+Kết quả eval: `results/eval.csv` và `results/eval.png`. Trace từng lần chạy: `logs/run_<timestamp>_<case>.jsonl` (kèm bản `.txt` dễ đọc). Ba lần chạy thật dùng trong báo cáo được lưu sẵn ở `logs/1st`, `logs/2nd`, `logs/3rd` và `results/run1`, `results/run2`, `results/run3`.
 
 ## Cấu hình `.env`
 
@@ -86,8 +88,8 @@ src/mcp_server/     store.py (đọc log, state), schemas.py (TypedDict kết qu
 src/agent/          llm.py, parser.py, mcp_client.py, loop.py, logger.py, react_trace.py
 scripts/            ask.py, run_eval.py, build_index.py, seed_logs.py, reset_state.py, view_log.py
 tests/             testset.jsonl (20 câu eval), test_*.py (test MCP server không cần LLM)
-results/            eval.csv, eval.png
-logs/               trace các lần chạy thật
+results/            run1/, run2/, run3/: eval.csv, eval.png của 3 lần chạy
+logs/               1st/, 2nd/, 3rd/: trace .jsonl + .txt của 3 lần chạy thật
 docs/               hướng dẫn làm việc nhóm, git, tool_contract.md (hợp đồng 10 tool)
 ```
 

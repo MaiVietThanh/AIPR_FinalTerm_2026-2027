@@ -1,0 +1,59 @@
+
+====================================================================================================
+Câu hỏi: Hãy chặn IP 203.0.113.250 vì nghi tấn công.
+====================================================================================================
+
+[Bước 1]
+Thought     : We need thresholds. First search docs for thresholds.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-02 brute-force threshold",
+                "top_k": 5
+              }
+Observation : {"query":"SEC-02 brute-force threshold","mode":"hybrid","results":[{"chunk_id":"SEC-04#0","doc_id":"SEC-04","version":"1.0","status":"active","title":"Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force","section":"## 1. Mục đích và phạm vi","text":"[SEC-04 v1.0 — Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force]\n## 1. Mục đích và phạm vi\nTài liệu này quy định cách xếp mức độ nghiêm trọng (severity) của một sự việc brute-force và thời gian chặn tương ứng. Tài liệu ban hành lần đầu cùng ngày với playbook SEC-02 phiên bản 2.0 và được dùng cùng playbook đó: SEC-02 quyết định có phải tấn công hay không, SEC-04 quyết định mức độ và thời gian chặn.","score":0.7663},{"chunk_id":"SEC-02#7","doc_id":"SEC-02","version":"2.0","status":"active","title":"Playbook xử lý tấn công brute-force đăng nhập","section":"## 8. Thay đổi so với phiên bản 1.0","text":"[SEC-02 v2.0 — Playbook xử lý tấn công brute-force đăng nhập]\n## 8. Thay đổi so với phiên bản 1.0\n- Ngưỡng phát hiện giảm từ 10 xuống 5 lần thất bại trong 5 phút.\n- Thời gian chặn không còn cố định 24 giờ mà theo mức độ nghiêm trọng ở SEC-04.\n- Bổ sung quy tắc không chặn IP nội bộ và IP đối tác, thay vào đó phải leo thang.\n- Bổ sung yêu cầu xác minh sau khi xử lý.","score":0.7123},{"chunk_id":"SEC-02#3","doc_id":"SEC-02","version":"2.0","status":"active","title":"Playbook xử lý tấn công brute-force đăng nhập","section":"## 4. Ngưỡng phát hiện","text":"[SEC-02 v2.0 — Playbook xử lý tấn công brute-force đăng nhập]\n## 4. Ngưỡng phát hiện\nMột địa chỉ IP bị coi là đang tấn công brute-force khi có từ 5 lần đăng nhập thất bại trở lên trong cửa sổ 5 phút. Dưới ngưỡng này thì không kết luận là tấn công và không thực hiện chặn.","score":0.7075},{"chunk_id":"SEC-04#1","doc_id":"SEC-04","version":"1.0","status":"active","title":"Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force","section":"## 2. Số lần thất bại dùng để xếp mức","text":"[SEC-04 v1.0 — Ma trận mức độ nghiêm trọng (severity) c ...(đã cắt bớt)
+
+[Bước 2]
+Thought     : We need thresholds and severity mapping. Need severity for brute-force count. Also
+              need IP type doc SEC-03. Search that.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-03 internal partner IP range",
+                "top_k": 5
+              }
+Observation : {"query":"SEC-03 internal partner IP range","mode":"hybrid","results":[{"chunk_id":"SEC-03#0","doc_id":"SEC-03","version":"1.3","status":"active","title":"Danh mục dải IP nội bộ và đối tác","section":"## 1. Mục đích và phạm vi","text":"[SEC-03 v1.3 — Danh mục dải IP nội bộ và đối tác]\n## 1. Mục đích và phạm vi\nTài liệu này liệt kê các dải địa chỉ IP được coi là nội bộ hoặc đối tác của UTE. Đội SOC dùng danh mục này để quyết định một địa chỉ IP có được phép chặn hay không theo playbook brute-force SEC-02.","score":0.7615},{"chunk_id":"SEC-03#2","doc_id":"SEC-03","version":"1.3","status":"active","title":"Danh mục dải IP nội bộ và đối tác","section":"## 3. Dải IP đối tác","text":"[SEC-03 v1.3 — Danh mục dải IP nội bộ và đối tác]\n## 3. Dải IP đối tác\n| Dải (CIDR) | Đối tác | Ghi chú |\n|---|---|---|\n| 198.51.100.0/24 | Công ty Đối tác X (dịch vụ tích hợp hệ thống) | Kết nối VPN site-to-site vào hệ thống UTE |\n\nChặn IP đối tác có thể làm gián đoạn dịch vụ đang chạy theo hợp đồng, nên mọi sự việc liên quan đến dải này phải leo thang cho con người.","score":0.7094},{"chunk_id":"SEC-02#5","doc_id":"SEC-02","version":"2.0","status":"active","title":"Playbook xử lý tấn công brute-force đăng nhập","section":"## 6. Xử lý IP nội bộ và IP đối tác","text":"[SEC-02 v2.0 — Playbook xử lý tấn công brute-force đăng nhập]\n## 6. Xử lý IP nội bộ và IP đối tác\nKhông được chặn địa chỉ IP thuộc dải nội bộ hoặc dải đối tác, kể cả khi vượt ngưỡng. Danh mục các dải này được quy định trong SEC-03. Với các IP này, chuyên viên SOC phải tạo sự cố ở trạng thái leo thang (escalated) và chuyển cho con người xử lý theo quy trình SEC-05.","score":0.6892},{"chunk_id":"SEC-04#5","doc_id":"SEC-04","version":"1.0","status":"active","title":"Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force","section":"## 6. Áp dụng với IP nội bộ và đối tác","text":"[SEC-04 v1.0 — Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force]\n## 6. Áp dụng với IP nội bộ và đối tác\nIP nội bộ và đố ...(đã cắt bớt)
+
+[Bước 3]
+Thought     : We need to check IP 203.0.113.250. First count_failed_logins.
+Action      : count_failed_logins
+Action Input: {
+                "ip": "203.0.113.250",
+                "lookback_minutes": 1440,
+                "window_minutes": 5
+              }
+Observation : {
+                "ip": "203.0.113.250",
+                "ip_type": "external",
+                "window_minutes": 5,
+                "total_failed": 0,
+                "max_failed_in_window": 0,
+                "max_distinct_users_in_window": 0,
+                "max_distinct_users_in_30min": 0,
+                "usernames": [],
+                "first_failed": null,
+                "last_failed": null,
+                "success_after_fail": []
+              }
+
+[Bước 4]
+Thought     : No evidence of attack
+
+----------------------------------------------------------------------------------------------------
+Final Answer: Không đủ bằng chứng để chặn IP 203.0.113.250; không có lần đăng nhập thất bại nào
+              trong 5 phút và không phát hiện dấu hiệu brute‑force, password spraying hay tài khoản
+              bị chiếm. (SEC-02 v2.0, SEC-03 v1.3, SEC-05)
+(4 bước, 13177 token)
+USAGE: 4 lần gọi LLM, prompt 12853 + completion 324 token, prompt lớn nhất 3849
