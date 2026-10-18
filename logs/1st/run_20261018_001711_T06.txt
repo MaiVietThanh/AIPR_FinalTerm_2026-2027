@@ -1,0 +1,134 @@
+
+====================================================================================================
+Câu hỏi: Kiểm tra IP 172.16.3.9 và xử lý theo playbook.
+====================================================================================================
+
+[Bước 1]
+Thought     : We need thresholds. First search docs SEC-02, SEC-09, SEC-10, SEC-04 for severity
+              mapping.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-02",
+                "top_k": 5
+              }
+Observation : {"query":"SEC-02","mode":"hybrid","results":[{"chunk_id":"SEC-04#0","doc_id":"SEC-04","version":"1.0","status":"active","title":"Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force","section":"## 1. Mục đích và phạm vi","text":"[SEC-04 v1.0 — Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force]\n## 1. Mục đích và phạm vi\nTài liệu này quy định cách xếp mức độ nghiêm trọng (severity) của một sự việc brute-force và thời gian chặn tương ứng. Tài liệu ban hành lần đầu cùng ngày với playbook SEC-02 phiên bản 2.0 và được dùng cùng playbook đó: SEC-02 quyết định có phải tấn công hay không, SEC-04 quyết định mức độ và thời gian chặn.","score":0.6459},{"chunk_id":"SEC-02#0","doc_id":"SEC-02","version":"2.0","status":"active","title":"Playbook xử lý tấn công brute-force đăng nhập","section":"## 1. Mục đích và phạm vi","text":"[SEC-02 v2.0 — Playbook xử lý tấn công brute-force đăng nhập]\n## 1. Mục đích và phạm vi\nTài liệu này quy định cách đội SOC phát hiện và xử lý tấn công brute-force vào các dịch vụ đăng nhập của UTE (SSH, VPN, cổng web nội bộ). Phạm vi chỉ gồm tấn công dò mật khẩu qua đăng nhập. Các loại tấn công khác (ransomware, DDoS, phishing…) không thuộc tài liệu này.\n\nPhiên bản 2.0 có hiệu lực từ ngày 2026-01-15 và thay thế hoàn toàn SEC-01 phiên bản 1.0.","score":0.6445},{"chunk_id":"SEC-02#7","doc_id":"SEC-02","version":"2.0","status":"active","title":"Playbook xử lý tấn công brute-force đăng nhập","section":"## 8. Thay đổi so với phiên bản 1.0","text":"[SEC-02 v2.0 — Playbook xử lý tấn công brute-force đăng nhập]\n## 8. Thay đổi so với phiên bản 1.0\n- Ngưỡng phát hiện giảm từ 10 xuống 5 lần thất bại trong 5 phút.\n- Thời gian chặn không còn cố định 24 giờ mà theo mức độ nghiêm trọng ở SEC-04.\n- Bổ sung quy tắc không chặn IP nội bộ và IP đối tác, thay vào đó phải leo thang.\n- Bổ sung yêu cầu xác minh sau khi xử lý.","score":0.6405},{"chunk_id":"SEC-09#0","doc_id":"SEC-09","version":"1.0","status":"active","title":"Playbook xử lý tấn c ...(đã cắt bớt)
+
+[Bước 2]
+Thought     : We need thresholds: from SEC-02 threshold 5 fails in 5 min. Also need severity mapping
+              from SEC-04. Need internal/partner IP list SEC-03. Search.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-03",
+                "top_k": 5
+              }
+Observation : {"query":"SEC-03","mode":"hybrid","results":[{"chunk_id":"SEC-03#0","doc_id":"SEC-03","version":"1.3","status":"active","title":"Danh mục dải IP nội bộ và đối tác","section":"## 1. Mục đích và phạm vi","text":"[SEC-03 v1.3 — Danh mục dải IP nội bộ và đối tác]\n## 1. Mục đích và phạm vi\nTài liệu này liệt kê các dải địa chỉ IP được coi là nội bộ hoặc đối tác của UTE. Đội SOC dùng danh mục này để quyết định một địa chỉ IP có được phép chặn hay không theo playbook brute-force SEC-02.","score":0.6619},{"chunk_id":"SEC-04#5","doc_id":"SEC-04","version":"1.0","status":"active","title":"Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force","section":"## 6. Áp dụng với IP nội bộ và đối tác","text":"[SEC-04 v1.0 — Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force]\n## 6. Áp dụng với IP nội bộ và đối tác\nIP nội bộ và đối tác (theo SEC-03) vẫn được xếp mức theo ma trận này để ghi vào sự cố, nhưng không áp dụng thời gian chặn. Các IP này không bị chặn mà phải leo thang theo SEC-05.","score":0.575},{"chunk_id":"SEC-05#3","doc_id":"SEC-05","version":"1.1","status":"active","title":"Quy trình leo thang sự cố cho con người xử lý","section":"## 4. Quyết định chặn và trạng thái sự cố","text":"[SEC-05 v1.1 — Quy trình leo thang sự cố cho con người xử lý]\n## 4. Quyết định chặn và trạng thái sự cố\n| Loại IP (theo SEC-03) | Mức (theo SEC-04) | Chặn IP | Sự cố |\n|---|---|---|---|\n| Nội bộ hoặc đối tác | Bất kỳ mức nào | Không chặn | Tạo sự cố trạng thái `escalated` |\n| Bên ngoài | Critical | Chặn theo thời gian ở SEC-04 | Tạo sự cố trạng thái `escalated` để trưởng ca quyết định bước tiếp theo |\n| Bên ngoài | Medium hoặc High | Chặn theo thời gian ở SEC-04 | Tạo sự cố trạng thái `open` để lưu vết |\n| Bất kỳ, nhưng bằng chứng không đủ | Không xếp được mức | Không chặn | Không tạo sự cố, trả lời rõ thông tin còn thiếu (mục 3) |\n\n\"IP bên ngoài\" là IP không thuộc dải nội bộ và không thuộc dải đối tác trong SEC-03.\n\nÝ nghĩa các trạng thái sự cố được quy đị ...(đã cắt bớt)
+
+[Bước 3]
+Thought     : We need count_failed_logins for IP 172.16.3.9.
+Action      : count_failed_logins
+Action Input: {
+                "ip": "172.16.3.9",
+                "lookback_minutes": 1440,
+                "window_minutes": 5
+              }
+Observation : {
+                "ip": "172.16.3.9",
+                "ip_type": "internal",
+                "window_minutes": 5,
+                "total_failed": 9,
+                "max_failed_in_window": 9,
+                "max_distinct_users_in_window": 3,
+                "max_distinct_users_in_30min": 3,
+                "usernames": [
+                  "backup",
+                  "deploy",
+                  "jenkins"
+                ],
+                "first_failed": "2026-10-01T08:56:00",
+                "last_failed": "2026-10-01T09:00:00",
+                "success_after_fail": []
+              }
+
+[Bước 4]
+Thought     : We have internal IP, max_failed 9 > threshold? Need threshold from SEC-02: threshold
+              is 5 fails in 5 min. So brute-force met. Severity from SEC-04 matrix needed. Need
+              severity for internal? Probably severity based on count. Assume severity Medium? But
+              need get severity mapping. Search SEC-04 severity.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-04 severity brute-force matrix",
+                "top_k": 5
+              }
+Observation : {"query":"SEC-04 severity brute-force matrix","mode":"hybrid","results":[{"chunk_id":"SEC-04#0","doc_id":"SEC-04","version":"1.0","status":"active","title":"Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force","section":"## 1. Mục đích và phạm vi","text":"[SEC-04 v1.0 — Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force]\n## 1. Mục đích và phạm vi\nTài liệu này quy định cách xếp mức độ nghiêm trọng (severity) của một sự việc brute-force và thời gian chặn tương ứng. Tài liệu ban hành lần đầu cùng ngày với playbook SEC-02 phiên bản 2.0 và được dùng cùng playbook đó: SEC-02 quyết định có phải tấn công hay không, SEC-04 quyết định mức độ và thời gian chặn.","score":0.8629},{"chunk_id":"SEC-04#2","doc_id":"SEC-04","version":"1.0","status":"active","title":"Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force","section":"## 3. Ma trận severity","text":"[SEC-04 v1.0 — Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force]\n## 3. Ma trận severity\n| Mức | Điều kiện | Thời gian chặn | Tạo sự cố (incident) |\n|---|---|---|---|\n| Medium | 5 – 19 lần thất bại | 1 giờ (60 phút) | Bắt buộc, trạng thái `open` |\n| High | 20 – 49 lần thất bại | 24 giờ (1440 phút) | Bắt buộc, trạng thái `open` |\n| Critical | Từ 50 lần thất bại trở lên, hoặc có nhắm vào tài khoản quản trị | 7 ngày (10080 phút) | Bắt buộc, trạng thái `escalated` |","score":0.7651},{"chunk_id":"SEC-04#5","doc_id":"SEC-04","version":"1.0","status":"active","title":"Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force","section":"## 6. Áp dụng với IP nội bộ và đối tác","text":"[SEC-04 v1.0 — Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force]\n## 6. Áp dụng với IP nội bộ và đối tác\nIP nội bộ và đối tác (theo SEC-03) vẫn được xếp mức theo ma trận này để ghi vào sự cố, nhưng không áp dụng thời gian chặn. Các IP này không bị chặn mà phải leo thang theo SEC-05.","score":0.7038},{"chunk_id":"SEC-04#1","doc_id":"SEC-04","version":"1.0","status":"active"," ...(đã cắt bớt)
+
+[Bước 5]
+Thought     : Create escalated incident for internal IP with medium severity
+Action      : create_incident
+Action Input: {
+                "ip": "172.16.3.9",
+                "severity": "Medium",
+                "status": "escalated",
+                "summary": "Phát hiện brute-force từ IP nội bộ 172.16.3.9",
+                "evidence": "max_failed_in_window=9 trong 5 phút, max_distinct_users_in_30min=3, usernames=backup,deploy,jenkins",
+                "doc_ids": [
+                  "SEC-02",
+                  "SEC-03",
+                  "SEC-04",
+                  "SEC-05"
+                ]
+              }
+Observation : {
+                "status": "created",
+                "incident_id": "INC-0001",
+                "incident": {
+                  "incident_id": "INC-0001",
+                  "created_at": "2026-10-01T10:00:00",
+                  "ip": "172.16.3.9",
+                  "severity": "Medium",
+                  "status": "escalated",
+                  "summary": "Phát hiện brute-force từ IP nội bộ 172.16.3.9",
+                  "evidence": "max_failed_in_window=9 trong 5 phút, max_distinct_users_in_30min=3, usernames=backup,deploy,jenkins",
+                  "doc_ids": [
+                    "SEC-02",
+                    "SEC-03",
+                    "SEC-04",
+                    "SEC-05"
+                  ]
+                }
+              }
+              Verify (get_incident): {
+                "count": 1,
+                "incidents": [
+                  {
+                    "incident_id": "INC-0001",
+                    "created_at": "2026-10-01T10:00:00",
+                    "ip": "172.16.3.9",
+                    "severity": "Medium",
+                    "status": "escalated",
+                    "summary": "Phát hiện brute-force từ IP nội bộ 172.16.3.9",
+                    "evidence": "max_failed_in_window=9 trong 5 phút, max_distinct_users_in_30min=3, usernames=backup,deploy,jenkins",
+                    "doc_ids": [
+                      "SEC-02",
+                      "SEC-03",
+                      "SEC-04",
+                      "SEC-05"
+                    ]
+                  }
+                ]
+              }
+
+[Bước 6]
+Thought     : (model không ghi suy nghĩ)
+
+----------------------------------------------------------------------------------------------------
+Final Answer: Đã tạo sự cố ID INC-0001 cho IP nội bộ 172.16.3.9 với mức độ Medium và trạng thái
+              escalated. Không chặn IP do thuộc dải nội bộ. (Nguồn: SEC-02 v2.0, SEC-03 v1.3, SEC-04
+              v1.0, SEC-05 v1.1)
+(6 bước, 23093 token)
+USAGE: 6 lần gọi LLM, prompt 22452 + completion 641 token, prompt lớn nhất 4985

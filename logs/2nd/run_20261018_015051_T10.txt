@@ -1,0 +1,185 @@
+
+====================================================================================================
+Câu hỏi: Kiểm tra IP 192.168.1.25 và xử lý theo playbook.
+====================================================================================================
+
+[Bước 1]
+Thought     : We need to process IP 192.168.1.25. First get thresholds: search SEC-02 for brute-
+              force, SEC-09 for spraying, SEC-10 for account takeover. Also need ip type:
+              count_failed_logins returns ip_type. Call count_failed_logins.
+Action      : count_failed_logins
+Action Input: {
+                "ip": "192.168.1.25",
+                "lookback_minutes": 1440,
+                "window_minutes": 5
+              }
+Observation : {
+                "ip": "192.168.1.25",
+                "ip_type": "internal",
+                "window_minutes": 5,
+                "total_failed": 4,
+                "max_failed_in_window": 3,
+                "max_distinct_users_in_window": 1,
+                "max_distinct_users_in_30min": 1,
+                "usernames": [
+                  "kiet"
+                ],
+                "first_failed": "2026-10-01T07:24:00",
+                "last_failed": "2026-10-01T07:30:00",
+                "success_after_fail": [
+                  {
+                    "username": "kiet",
+                    "fails_before": 4,
+                    "success_at": "2026-10-01T07:31:00"
+                  }
+                ]
+              }
+
+[Bước 2]
+Thought     : We have internal IP, failed logs, also success after fail indicates possible account
+              compromise. Need to get thresholds for brute-force (SEC-02) and account compromise
+              (SEC-10). Search docs.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-02 brute-force threshold",
+                "top_k": 5
+              }
+Observation : {
+                "results": [
+                  {
+                    "doc_id": "SEC-04",
+                    "version": "1.0",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này quy định cách xếp mức độ nghiêm trọng (severity) của một sự việc brute-force và thời gian chặn tương ứng. Tài liệu ban hành lần đầu cùng ngày với playbook SEC-02 phiên bản 2.0 và được dùng cùng playbook đó: SEC-02 quyết định có phải tấn công hay không, SEC-04 quyết định mức độ và thời gian chặn."
+                  },
+                  {
+                    "doc_id": "SEC-02",
+                    "version": "2.0",
+                    "text": "## 8. Thay đổi so với phiên bản 1.0\n- Ngưỡng phát hiện giảm từ 10 xuống 5 lần thất bại trong 5 phút.\n- Thời gian chặn không còn cố định 24 giờ mà theo mức độ nghiêm trọng ở SEC-04.\n- Bổ sung quy tắc không chặn IP nội bộ và IP đối tác, thay vào đó phải leo thang.\n- Bổ sung yêu cầu xác minh sau khi xử lý."
+                  },
+                  {
+                    "doc_id": "SEC-02",
+                    "version": "2.0",
+                    "text": "## 4. Ngưỡng phát hiện\nMột địa chỉ IP bị coi là đang tấn công brute-force khi có từ 5 lần đăng nhập thất bại trở lên trong cửa sổ 5 phút. Dưới ngưỡng này thì không kết luận là tấn công và không thực hiện chặn."
+                  },
+                  {
+                    "doc_id": "SEC-04",
+                    "version": "1.0",
+                    "text": "## 2. Số lần thất bại dùng để xếp mức\nSố lần thất bại dùng để xếp mức là số lần đăng nhập thất bại lớn nhất của địa chỉ IP trong một cửa sổ 5 phút, đếm theo cách ở mục 3 của SEC-02. Nếu số này dưới 5 thì không phải tấn công brute-force và không xếp mức."
+                  },
+                  {
+                    "doc_id": "SEC-02",
+                    "version": "2.0",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này quy định cách đội SOC phát hiện và xử lý tấn công brute-force vào các dịch vụ đăng nhập của UTE (SSH, VPN, cổng web nội bộ). Phạm vi chỉ gồm tấn công dò mật khẩu qua đăng nhập. Các loại tấn công khác (ransomware, DDoS, phishing…) không thuộc tài liệu này.\n\nPhiên bản 2.0 có hiệu lực từ ngày 2026-01-15 và thay thế hoàn toàn SEC-01 phiên bản 1.0."
+                  }
+                ]
+              }
+
+[Bước 3]
+Thought     : We have internal IP, max_failed_in_window=3 which is below threshold 5, so not brute-
+              force. But there is success_after_fail indicating possible account compromise. Need
+              SEC-10 details.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-10 account compromise severity",
+                "top_k": 5
+              }
+Observation : {
+                "results": [
+                  {
+                    "doc_id": "SEC-10",
+                    "version": "1.0",
+                    "text": "## 3. Mức độ nghiêm trọng\nMọi trường hợp tài khoản bị chiếm đều được xếp mức Critical, bất kể số lần thất bại trước đó."
+                  },
+                  {
+                    "doc_id": "SEC-04",
+                    "version": "1.0",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này quy định cách xếp mức độ nghiêm trọng (severity) của một sự việc brute-force và thời gian chặn tương ứng. Tài liệu ban hành lần đầu cùng ngày với playbook SEC-02 phiên bản 2.0 và được dùng cùng playbook đó: SEC-02 quyết định có phải tấn công hay không, SEC-04 quyết định mức độ và thời gian chặn."
+                  },
+                  {
+                    "doc_id": "SEC-04",
+                    "version": "1.0",
+                    "text": "## 3. Ma trận severity\n| Mức | Điều kiện | Thời gian chặn | Tạo sự cố (incident) |\n|---|---|---|---|\n| Medium | 5 – 19 lần thất bại | 1 giờ (60 phút) | Bắt buộc, trạng thái `open` |\n| High | 20 – 49 lần thất bại | 24 giờ (1440 phút) | Bắt buộc, trạng thái `open` |\n| Critical | Từ 50 lần thất bại trở lên, hoặc có nhắm vào tài khoản quản trị | 7 ngày (10080 phút) | Bắt buộc, trạng thái `escalated` |"
+                  },
+                  {
+                    "doc_id": "SEC-10",
+                    "version": "1.0",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này quy định cách đội SOC phát hiện và xử lý tài khoản có dấu hiệu bị chiếm, tức là kẻ tấn công đã đoán đúng mật khẩu và đăng nhập thành công. Đây là tình huống nghiêm trọng hơn brute-force hay password spraying, vì kẻ tấn công đã vào được hệ thống."
+                  },
+                  {
+                    "doc_id": "SEC-10",
+                    "version": "1.0",
+                    "text": "## 2. Dấu hiệu tài khoản bị chiếm\nMột tài khoản được coi là có dấu hiệu bị chiếm khi có từ 3 đến 4 lần đăng nhập thất bại liên tiếp trong 15 phút (chưa chạm ngưỡng khoá 5 lần của SEC-07), sau đó có một lần đăng nhập thành công vào chính tài khoản đó từ cùng địa chỉ IP với các lần thất bại.\n\nĐăng nhập thành công từ một IP khác với các lần thất bại không được coi là dấu hiệu bị chiếm theo tài liệu này."
+                  }
+                ]
+              }
+
+[Bước 4]
+Thought     : We have internal IP, success after fail indicates account compromise. Need to process:
+              internal IP => do not block, create incident escalated, severity Critical per SEC-10,
+              include doc ids SEC-10, SEC-03, SEC-05. Also need to lock account? For internal IP,
+              rule says: account compromise from internal IP: do NOT block IP, do NOT lock account
+              (SEC-10 mục 5). So just create incident. Need to get incident. Use create_incident.
+Action      : create_incident
+Action Input: {
+                "ip": "192.168.1.25",
+                "severity": "Critical",
+                "status": "escalated",
+                "summary": "Possible account compromise detected from internal IP",
+                "evidence": "success_after_fail detected for user kiet after 4 failed attempts",
+                "doc_ids": [
+                  "SEC-10",
+                  "SEC-03",
+                  "SEC-05"
+                ]
+              }
+Observation : {
+                "status": "created",
+                "incident_id": "INC-0001",
+                "incident": {
+                  "incident_id": "INC-0001",
+                  "created_at": "2026-10-01T10:00:00",
+                  "ip": "192.168.1.25",
+                  "severity": "Critical",
+                  "status": "escalated",
+                  "summary": "Possible account compromise detected from internal IP",
+                  "evidence": "success_after_fail detected for user kiet after 4 failed attempts",
+                  "doc_ids": [
+                    "SEC-10",
+                    "SEC-03",
+                    "SEC-05"
+                  ]
+                }
+              }
+              Verify (get_incident): {
+                "count": 1,
+                "incidents": [
+                  {
+                    "incident_id": "INC-0001",
+                    "created_at": "2026-10-01T10:00:00",
+                    "ip": "192.168.1.25",
+                    "severity": "Critical",
+                    "status": "escalated",
+                    "summary": "Possible account compromise detected from internal IP",
+                    "evidence": "success_after_fail detected for user kiet after 4 failed attempts",
+                    "doc_ids": [
+                      "SEC-10",
+                      "SEC-03",
+                      "SEC-05"
+                    ]
+                  }
+                ]
+              }
+
+[Bước 5]
+Thought     : Processed internal IP account compromise per playbooks
+
+----------------------------------------------------------------------------------------------------
+Final Answer: Đã tạo incident ID INC-0001 với mức độ Critical, trạng thái escalated cho IP nội bộ
+              192.168.1.25 do phát hiện dấu hiệu tài khoản bị chiếm (user kiet). Không chặn IP và
+              không khóa tài khoản vì IP là nội bộ. (Nguồn: SEC-10 v1.0, SEC-03, SEC-05)
+(5 bước, 17287 token)
+USAGE: 5 lần gọi LLM, prompt 16678 + completion 609 token, prompt lớn nhất 4233

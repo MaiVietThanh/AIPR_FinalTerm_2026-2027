@@ -1,0 +1,64 @@
+
+====================================================================================================
+Câu hỏi: IP 203.0.113.99 có cần chặn không?
+====================================================================================================
+
+[Bước 1]
+Thought     : We need thresholds. Search docs SEC-02, SEC-04, SEC-09, SEC-10.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-02",
+                "top_k": 5
+              }
+Observation : {"query":"SEC-02","mode":"hybrid","results":[{"chunk_id":"SEC-04#0","doc_id":"SEC-04","version":"1.0","status":"active","title":"Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force","section":"## 1. Mục đích và phạm vi","text":"[SEC-04 v1.0 — Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force]\n## 1. Mục đích và phạm vi\nTài liệu này quy định cách xếp mức độ nghiêm trọng (severity) của một sự việc brute-force và thời gian chặn tương ứng. Tài liệu ban hành lần đầu cùng ngày với playbook SEC-02 phiên bản 2.0 và được dùng cùng playbook đó: SEC-02 quyết định có phải tấn công hay không, SEC-04 quyết định mức độ và thời gian chặn.","score":0.6459},{"chunk_id":"SEC-02#0","doc_id":"SEC-02","version":"2.0","status":"active","title":"Playbook xử lý tấn công brute-force đăng nhập","section":"## 1. Mục đích và phạm vi","text":"[SEC-02 v2.0 — Playbook xử lý tấn công brute-force đăng nhập]\n## 1. Mục đích và phạm vi\nTài liệu này quy định cách đội SOC phát hiện và xử lý tấn công brute-force vào các dịch vụ đăng nhập của UTE (SSH, VPN, cổng web nội bộ). Phạm vi chỉ gồm tấn công dò mật khẩu qua đăng nhập. Các loại tấn công khác (ransomware, DDoS, phishing…) không thuộc tài liệu này.\n\nPhiên bản 2.0 có hiệu lực từ ngày 2026-01-15 và thay thế hoàn toàn SEC-01 phiên bản 1.0.","score":0.6445},{"chunk_id":"SEC-02#7","doc_id":"SEC-02","version":"2.0","status":"active","title":"Playbook xử lý tấn công brute-force đăng nhập","section":"## 8. Thay đổi so với phiên bản 1.0","text":"[SEC-02 v2.0 — Playbook xử lý tấn công brute-force đăng nhập]\n## 8. Thay đổi so với phiên bản 1.0\n- Ngưỡng phát hiện giảm từ 10 xuống 5 lần thất bại trong 5 phút.\n- Thời gian chặn không còn cố định 24 giờ mà theo mức độ nghiêm trọng ở SEC-04.\n- Bổ sung quy tắc không chặn IP nội bộ và IP đối tác, thay vào đó phải leo thang.\n- Bổ sung yêu cầu xác minh sau khi xử lý.","score":0.6405},{"chunk_id":"SEC-09#0","doc_id":"SEC-09","version":"1.0","status":"active","title":"Playbook xử lý tấn c ...(đã cắt bớt)
+
+[Bước 2]
+Thought     : We need count_failed_logins for IP.
+Action      : count_failed_logins
+Action Input: {
+                "ip": "203.0.113.99",
+                "lookback_minutes": 1440,
+                "window_minutes": 5
+              }
+Observation : {
+                "ip": "203.0.113.99",
+                "ip_type": "external",
+                "window_minutes": 5,
+                "total_failed": 7,
+                "max_failed_in_window": 1,
+                "max_distinct_users_in_window": 1,
+                "max_distinct_users_in_30min": 1,
+                "usernames": [
+                  "oracle"
+                ],
+                "first_failed": "2026-10-01T09:15:00",
+                "last_failed": "2026-10-01T09:55:00",
+                "success_after_fail": []
+              }
+
+[Bước 3]
+Thought     : We have 7 total fails but max_failed_in_window is 1, threshold for brute-force is 5 in
+              5 min per SEC-02 change. Not met. Need also check password spraying threshold? Not
+              given yet; need SEC-09 thresholds. Search SEC-09.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-09",
+                "top_k": 5
+              }
+Observation : {"query":"SEC-09","mode":"hybrid","results":[{"chunk_id":"SEC-09#0","doc_id":"SEC-09","version":"1.0","status":"active","title":"Playbook xử lý tấn công password spraying","section":"## 1. Mục đích và phạm vi","text":"[SEC-09 v1.0 — Playbook xử lý tấn công password spraying]\n## 1. Mục đích và phạm vi\nTài liệu này quy định cách đội SOC phát hiện và xử lý tấn công password spraying vào các dịch vụ đăng nhập của UTE (SSH, VPN, cổng web nội bộ). Tài liệu bổ sung cho playbook brute-force SEC-02, vì password spraying có thể không vượt ngưỡng của SEC-02.","score":0.6811},{"chunk_id":"SEC-09#3","doc_id":"SEC-09","version":"1.0","status":"active","title":"Playbook xử lý tấn công password spraying","section":"## 4. Mức độ nghiêm trọng và thời gian chặn","text":"[SEC-09 v1.0 — Playbook xử lý tấn công password spraying]\n## 4. Mức độ nghiêm trọng và thời gian chặn\n| Điều kiện | Mức | Thời gian chặn |\n|---|---|---|\n| Vượt ngưỡng ở mục 3 | High | 24 giờ (1440 phút) |\n| Vượt ngưỡng và có thử vào tài khoản quản trị (`admin`, `root`, `administrator`) | Critical | 7 ngày (10080 phút) |\n\nNếu cùng địa chỉ IP đó cũng vượt ngưỡng brute-force của SEC-02, xếp mức theo cả SEC-04 và bảng trên rồi chọn mức cao nhất.","score":0.5671},{"chunk_id":"SEC-09#6","doc_id":"SEC-09","version":"1.0","status":"active","title":"Playbook xử lý tấn công password spraying","section":"## 7. Xác minh sau khi xử lý","text":"[SEC-09 v1.0 — Playbook xử lý tấn công password spraying]\n## 7. Xác minh sau khi xử lý\nSau khi chặn IP hoặc tạo sự cố, phải kiểm tra lại danh sách chặn hoặc sự cố vừa tạo để xác nhận thay đổi đã được ghi nhận. Sự cố phải ghi số username khác nhau bị thử, khung thời gian và mã tài liệu làm căn cứ.","score":0.5255},{"chunk_id":"SEC-09#4","doc_id":"SEC-09","version":"1.0","status":"active","title":"Playbook xử lý tấn công password spraying","section":"## 5. Hành động xử lý","text":"[SEC-09 v1.0 — Playbook xử lý tấn công password spraying]\n## 5. Hành động xử lý\n- IP bên ngoài mức Hig ...(đã cắt bớt)
+
+[Bước 4]
+Thought     : Không đủ bằng chứng để xác định tấn công
+
+----------------------------------------------------------------------------------------------------
+Final Answer: IP 203.0.113.99 không đạt ngưỡng brute‑force (SEC‑02 v2.0) vì max_failed_in_window=1 <
+              5; không đạt ngưỡng password‑spraying (SEC‑09 v1.0) vì số username khác nhau trong
+              30 phút=1 < ngưỡng; không có dấu hiệu tài khoản bị chiếm (SEC‑10). Do đó không chặn IP
+              và không tạo incident. Thiếu thông tin về số lần thử mật khẩu trên nhiều tài khoản để
+              xác định password‑spraying. (SEC‑02 v2.0, SEC‑09 v1.0, SEC‑10, SEC‑05)
+(4 bước, 12778 token)
+USAGE: 4 lần gọi LLM, prompt 12269 + completion 509 token, prompt lớn nhất 3842

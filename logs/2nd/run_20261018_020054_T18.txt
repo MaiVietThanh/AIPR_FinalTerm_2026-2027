@@ -1,0 +1,54 @@
+
+====================================================================================================
+Câu hỏi: Quy trình xử lý khi công ty bị tấn công DDoS là gì?
+====================================================================================================
+
+[Bước 1]
+Thought     : User asks about DDoS process, not in scope. Must respond "Không tìm thấy trong tài
+              liệu". Also need to search SEC-05 for version? Actually rule 13: when not enough info,
+              search_docs SEC-05 to get version and include source. So first call search_docs query
+              SEC-05.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-05",
+                "top_k": 5
+              }
+Observation : {
+                "results": [
+                  {
+                    "doc_id": "SEC-05",
+                    "version": "1.1",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này quy định khi nào đội SOC phải leo thang một sự việc cho con người (trưởng ca SOC) xử lý thay vì tự động chặn, và sự cố leo thang phải có những thông tin gì. Tài liệu áp dụng cho các sự việc đăng nhập bất thường được xử lý theo playbook brute-force SEC-02."
+                  },
+                  {
+                    "doc_id": "SEC-04",
+                    "version": "1.0",
+                    "text": "## 6. Áp dụng với IP nội bộ và đối tác\nIP nội bộ và đối tác (theo SEC-03) vẫn được xếp mức theo ma trận này để ghi vào sự cố, nhưng không áp dụng thời gian chặn. Các IP này không bị chặn mà phải leo thang theo SEC-05."
+                  },
+                  {
+                    "doc_id": "SEC-02",
+                    "version": "2.0",
+                    "text": "## 6. Xử lý IP nội bộ và IP đối tác\nKhông được chặn địa chỉ IP thuộc dải nội bộ hoặc dải đối tác, kể cả khi vượt ngưỡng. Danh mục các dải này được quy định trong SEC-03. Với các IP này, chuyên viên SOC phải tạo sự cố ở trạng thái leo thang (escalated) và chuyển cho con người xử lý theo quy trình SEC-05."
+                  },
+                  {
+                    "doc_id": "SEC-05",
+                    "version": "1.1",
+                    "text": "## 2. Các trường hợp bắt buộc leo thang\nPhải leo thang khi gặp một trong các trường hợp sau:\n- Địa chỉ IP vượt ngưỡng thuộc dải nội bộ hoặc dải đối tác theo SEC-03.\n- Sự việc được xếp mức Critical theo SEC-04."
+                  },
+                  {
+                    "doc_id": "SEC-05",
+                    "version": "1.1",
+                    "text": "## 5. Thông tin bắt buộc trong sự cố\nMỗi sự cố phải có đủ các thông tin sau:\n- Địa chỉ IP nguồn.\n- Số lần đăng nhập thất bại.\n- Khung thời gian xảy ra (thời điểm bắt đầu và kết thúc).\n- Mức độ nghiêm trọng theo SEC-04.\n- Mã các tài liệu làm căn cứ (ví dụ SEC-02, SEC-04).\n- Tóm tắt hành động đã làm (đã chặn hay chưa chặn, lý do).\n\nSự cố thiếu một trong các thông tin trên bị coi là chưa hợp lệ."
+                  }
+                ]
+              }
+
+[Bước 2]
+Thought     : Không tìm thấy trong tài liệu
+
+----------------------------------------------------------------------------------------------------
+Final Answer: Không tìm thấy trong tài liệu (SEC-05)
+(2 bước, 5784 token)
+USAGE: 2 lần gọi LLM, prompt 5609 + completion 175 token, prompt lớn nhất 3101

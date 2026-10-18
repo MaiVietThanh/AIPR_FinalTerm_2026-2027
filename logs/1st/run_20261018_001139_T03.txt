@@ -1,0 +1,174 @@
+
+====================================================================================================
+Câu hỏi: Kiểm tra IP 192.0.2.44 và xử lý theo playbook.
+====================================================================================================
+
+[Bước 1]
+Thought     : We need thresholds. First search docs for brute-force threshold SEC-02.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-02",
+                "top_k": 5
+              }
+Observation : {"query":"SEC-02","mode":"hybrid","results":[{"chunk_id":"SEC-04#0","doc_id":"SEC-04","version":"1.0","status":"active","title":"Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force","section":"## 1. Mục đích và phạm vi","text":"[SEC-04 v1.0 — Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force]\n## 1. Mục đích và phạm vi\nTài liệu này quy định cách xếp mức độ nghiêm trọng (severity) của một sự việc brute-force và thời gian chặn tương ứng. Tài liệu ban hành lần đầu cùng ngày với playbook SEC-02 phiên bản 2.0 và được dùng cùng playbook đó: SEC-02 quyết định có phải tấn công hay không, SEC-04 quyết định mức độ và thời gian chặn.","score":0.6459},{"chunk_id":"SEC-02#0","doc_id":"SEC-02","version":"2.0","status":"active","title":"Playbook xử lý tấn công brute-force đăng nhập","section":"## 1. Mục đích và phạm vi","text":"[SEC-02 v2.0 — Playbook xử lý tấn công brute-force đăng nhập]\n## 1. Mục đích và phạm vi\nTài liệu này quy định cách đội SOC phát hiện và xử lý tấn công brute-force vào các dịch vụ đăng nhập của UTE (SSH, VPN, cổng web nội bộ). Phạm vi chỉ gồm tấn công dò mật khẩu qua đăng nhập. Các loại tấn công khác (ransomware, DDoS, phishing…) không thuộc tài liệu này.\n\nPhiên bản 2.0 có hiệu lực từ ngày 2026-01-15 và thay thế hoàn toàn SEC-01 phiên bản 1.0.","score":0.6445},{"chunk_id":"SEC-02#7","doc_id":"SEC-02","version":"2.0","status":"active","title":"Playbook xử lý tấn công brute-force đăng nhập","section":"## 8. Thay đổi so với phiên bản 1.0","text":"[SEC-02 v2.0 — Playbook xử lý tấn công brute-force đăng nhập]\n## 8. Thay đổi so với phiên bản 1.0\n- Ngưỡng phát hiện giảm từ 10 xuống 5 lần thất bại trong 5 phút.\n- Thời gian chặn không còn cố định 24 giờ mà theo mức độ nghiêm trọng ở SEC-04.\n- Bổ sung quy tắc không chặn IP nội bộ và IP đối tác, thay vào đó phải leo thang.\n- Bổ sung yêu cầu xác minh sau khi xử lý.","score":0.6405},{"chunk_id":"SEC-09#0","doc_id":"SEC-09","version":"1.0","status":"active","title":"Playbook xử lý tấn c ...(đã cắt bớt)
+
+[Bước 2]
+Thought     : We need thresholds: from SEC-02 threshold 5 fails in 5 min. Also need severity mapping
+              from SEC-04. Need also ip_type from SEC-03. Search those.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-03 ip type internal partner",
+                "top_k": 5
+              }
+Observation : {"query":"SEC-03 ip type internal partner","mode":"hybrid","results":[{"chunk_id":"SEC-03#0","doc_id":"SEC-03","version":"1.3","status":"active","title":"Danh mục dải IP nội bộ và đối tác","section":"## 1. Mục đích và phạm vi","text":"[SEC-03 v1.3 — Danh mục dải IP nội bộ và đối tác]\n## 1. Mục đích và phạm vi\nTài liệu này liệt kê các dải địa chỉ IP được coi là nội bộ hoặc đối tác của UTE. Đội SOC dùng danh mục này để quyết định một địa chỉ IP có được phép chặn hay không theo playbook brute-force SEC-02.","score":0.7619},{"chunk_id":"SEC-03#2","doc_id":"SEC-03","version":"1.3","status":"active","title":"Danh mục dải IP nội bộ và đối tác","section":"## 3. Dải IP đối tác","text":"[SEC-03 v1.3 — Danh mục dải IP nội bộ và đối tác]\n## 3. Dải IP đối tác\n| Dải (CIDR) | Đối tác | Ghi chú |\n|---|---|---|\n| 198.51.100.0/24 | Công ty Đối tác X (dịch vụ tích hợp hệ thống) | Kết nối VPN site-to-site vào hệ thống UTE |\n\nChặn IP đối tác có thể làm gián đoạn dịch vụ đang chạy theo hợp đồng, nên mọi sự việc liên quan đến dải này phải leo thang cho con người.","score":0.6835},{"chunk_id":"SEC-02#5","doc_id":"SEC-02","version":"2.0","status":"active","title":"Playbook xử lý tấn công brute-force đăng nhập","section":"## 6. Xử lý IP nội bộ và IP đối tác","text":"[SEC-02 v2.0 — Playbook xử lý tấn công brute-force đăng nhập]\n## 6. Xử lý IP nội bộ và IP đối tác\nKhông được chặn địa chỉ IP thuộc dải nội bộ hoặc dải đối tác, kể cả khi vượt ngưỡng. Danh mục các dải này được quy định trong SEC-03. Với các IP này, chuyên viên SOC phải tạo sự cố ở trạng thái leo thang (escalated) và chuyển cho con người xử lý theo quy trình SEC-05.","score":0.6652},{"chunk_id":"SEC-04#5","doc_id":"SEC-04","version":"1.0","status":"active","title":"Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force","section":"## 6. Áp dụng với IP nội bộ và đối tác","text":"[SEC-04 v1.0 — Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force]\n## 6. Áp dụng với IP nội bộ và đối tác\nIP nội bộ và đối ...(đã cắt bớt)
+
+[Bước 3]
+Thought     : We need count_failed_logins for IP.
+Action      : count_failed_logins
+Action Input: {
+                "ip": "192.0.2.44",
+                "lookback_minutes": 1440,
+                "window_minutes": 5
+              }
+Observation : {
+                "ip": "192.0.2.44",
+                "ip_type": "external",
+                "window_minutes": 5,
+                "total_failed": 7,
+                "max_failed_in_window": 7,
+                "max_distinct_users_in_window": 2,
+                "max_distinct_users_in_30min": 2,
+                "usernames": [
+                  "guest",
+                  "test"
+                ],
+                "first_failed": "2026-10-01T09:42:00",
+                "last_failed": "2026-10-01T09:45:00",
+                "success_after_fail": []
+              }
+
+[Bước 4]
+Thought     : We have brute-force threshold from SEC-02: threshold reduced to 5 fails in 5 min. Here
+              max_failed_in_window=7 >5, so attack detected. Need severity from SEC-04 matrix. Not
+              fetched yet. Search SEC-04 severity mapping.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-04 severity brute-force matrix",
+                "top_k": 5
+              }
+Observation : {"query":"SEC-04 severity brute-force matrix","mode":"hybrid","results":[{"chunk_id":"SEC-04#0","doc_id":"SEC-04","version":"1.0","status":"active","title":"Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force","section":"## 1. Mục đích và phạm vi","text":"[SEC-04 v1.0 — Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force]\n## 1. Mục đích và phạm vi\nTài liệu này quy định cách xếp mức độ nghiêm trọng (severity) của một sự việc brute-force và thời gian chặn tương ứng. Tài liệu ban hành lần đầu cùng ngày với playbook SEC-02 phiên bản 2.0 và được dùng cùng playbook đó: SEC-02 quyết định có phải tấn công hay không, SEC-04 quyết định mức độ và thời gian chặn.","score":0.8629},{"chunk_id":"SEC-04#2","doc_id":"SEC-04","version":"1.0","status":"active","title":"Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force","section":"## 3. Ma trận severity","text":"[SEC-04 v1.0 — Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force]\n## 3. Ma trận severity\n| Mức | Điều kiện | Thời gian chặn | Tạo sự cố (incident) |\n|---|---|---|---|\n| Medium | 5 – 19 lần thất bại | 1 giờ (60 phút) | Bắt buộc, trạng thái `open` |\n| High | 20 – 49 lần thất bại | 24 giờ (1440 phút) | Bắt buộc, trạng thái `open` |\n| Critical | Từ 50 lần thất bại trở lên, hoặc có nhắm vào tài khoản quản trị | 7 ngày (10080 phút) | Bắt buộc, trạng thái `escalated` |","score":0.7651},{"chunk_id":"SEC-04#5","doc_id":"SEC-04","version":"1.0","status":"active","title":"Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force","section":"## 6. Áp dụng với IP nội bộ và đối tác","text":"[SEC-04 v1.0 — Ma trận mức độ nghiêm trọng (severity) cho tấn công brute-force]\n## 6. Áp dụng với IP nội bộ và đối tác\nIP nội bộ và đối tác (theo SEC-03) vẫn được xếp mức theo ma trận này để ghi vào sự cố, nhưng không áp dụng thời gian chặn. Các IP này không bị chặn mà phải leo thang theo SEC-05.","score":0.7038},{"chunk_id":"SEC-04#1","doc_id":"SEC-04","version":"1.0","status":"active"," ...(đã cắt bớt)
+
+[Bước 5]
+Thought     : We have brute-force detection: max_failed_in_window=7 which is >=5 => Medium severity.
+              IP external. So need create incident open, then block IP for 60 mins. Use doc_ids
+              SEC-02, SEC-04, SEC-03?, also SEC-05 for escalation? For external medium, block and
+              incident open. Use create_incident then block_ip. Need incident_id from
+              create_incident. We'll call create_incident.
+Action      : create_incident
+Action Input: {
+                "doc_ids": [
+                  "SEC-02",
+                  "SEC-04",
+                  "SEC-03"
+                ],
+                "evidence": "7 failed logins within 5 minutes from external IP 192.0.2.44",
+                "ip": "192.0.2.44",
+                "severity": "Medium",
+                "status": "open",
+                "summary": "Brute-force login attempt detected"
+              }
+Observation : {
+                "status": "created",
+                "incident_id": "INC-0001",
+                "incident": {
+                  "incident_id": "INC-0001",
+                  "created_at": "2026-10-01T10:00:00",
+                  "ip": "192.0.2.44",
+                  "severity": "Medium",
+                  "status": "open",
+                  "summary": "Brute-force login attempt detected",
+                  "evidence": "7 failed logins within 5 minutes from external IP 192.0.2.44",
+                  "doc_ids": [
+                    "SEC-02",
+                    "SEC-04",
+                    "SEC-03"
+                  ]
+                }
+              }
+              Verify (get_incident): {
+                "count": 1,
+                "incidents": [
+                  {
+                    "incident_id": "INC-0001",
+                    "created_at": "2026-10-01T10:00:00",
+                    "ip": "192.0.2.44",
+                    "severity": "Medium",
+                    "status": "open",
+                    "summary": "Brute-force login attempt detected",
+                    "evidence": "7 failed logins within 5 minutes from external IP 192.0.2.44",
+                    "doc_ids": [
+                      "SEC-02",
+                      "SEC-04",
+                      "SEC-03"
+                    ]
+                  }
+                ]
+              }
+
+[Bước 6]
+Thought     : We need to block IP now. Use block_ip with severity Medium, duration from SEC-04:
+              Medium = 60 minutes. Use doc_id SEC-04.
+Action      : block_ip
+Action Input: {
+                "ip": "192.0.2.44",
+                "severity": "Medium",
+                "duration_minutes": 60,
+                "reason": "Brute-force login attempt detected",
+                "doc_id": "SEC-04",
+                "incident_id": "INC-0001"
+              }
+Observation : {
+                "status": "blocked",
+                "entry": {
+                  "ip": "192.0.2.44",
+                  "severity": "Medium",
+                  "duration_minutes": 60,
+                  "blocked_at": "2026-10-01T10:00:00",
+                  "expires_at": "2026-10-01T11:00:00",
+                  "reason": "Brute-force login attempt detected",
+                  "doc_id": "SEC-04",
+                  "incident_id": "INC-0001"
+                }
+              }
+              Verify (get_blocklist): {
+                "count": 1,
+                "entries": [
+                  {
+                    "ip": "192.0.2.44",
+                    "severity": "Medium",
+                    "duration_minutes": 60,
+                    "blocked_at": "2026-10-01T10:00:00",
+                    "expires_at": "2026-10-01T11:00:00",
+                    "reason": "Brute-force login attempt detected",
+                    "doc_id": "SEC-04",
+                    "incident_id": "INC-0001"
+                  }
+                ]
+              }
+
+[Bước 7]
+Thought     : (model không ghi suy nghĩ)
+
+----------------------------------------------------------------------------------------------------
+Final Answer: IP 192.0.2.44 đã được phát hiện có 7 lần đăng nhập thất bại trong 5 phút, vượt ngưỡng
+              brute‑force (SEC‑02 v2.0) và được xếp mức Medium (SEC‑04 v1.0). Đối tượng là IP bên
+              ngoài, do đó đã tạo incident INC‑0001 (status open) và chặn IP trong 60 phút.
+              (Sources: SEC‑02 v2.0, SEC‑04 v1.0, SEC‑03 v1.3)
+(7 bước, 28270 token)
+USAGE: 7 lần gọi LLM, prompt 27554 + completion 716 token, prompt lớn nhất 5153

@@ -1,0 +1,342 @@
+
+====================================================================================================
+Câu hỏi: Kiểm tra IP 203.0.113.200 và xử lý theo playbook.
+====================================================================================================
+
+[Bước 1]
+Thought     : We need thresholds. First search SEC-02 for brute-force.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-02",
+                "top_k": 5
+              }
+Observation : {
+                "results": [
+                  {
+                    "doc_id": "SEC-04",
+                    "version": "1.0",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này quy định cách xếp mức độ nghiêm trọng (severity) của một sự việc brute-force và thời gian chặn tương ứng. Tài liệu ban hành lần đầu cùng ngày với playbook SEC-02 phiên bản 2.0 và được dùng cùng playbook đó: SEC-02 quyết định có phải tấn công hay không, SEC-04 quyết định mức độ và thời gian chặn."
+                  },
+                  {
+                    "doc_id": "SEC-02",
+                    "version": "2.0",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này quy định cách đội SOC phát hiện và xử lý tấn công brute-force vào các dịch vụ đăng nhập của UTE (SSH, VPN, cổng web nội bộ). Phạm vi chỉ gồm tấn công dò mật khẩu qua đăng nhập. Các loại tấn công khác (ransomware, DDoS, phishing…) không thuộc tài liệu này.\n\nPhiên bản 2.0 có hiệu lực từ ngày 2026-01-15 và thay thế hoàn toàn SEC-01 phiên bản 1.0."
+                  },
+                  {
+                    "doc_id": "SEC-02",
+                    "version": "2.0",
+                    "text": "## 8. Thay đổi so với phiên bản 1.0\n- Ngưỡng phát hiện giảm từ 10 xuống 5 lần thất bại trong 5 phút.\n- Thời gian chặn không còn cố định 24 giờ mà theo mức độ nghiêm trọng ở SEC-04.\n- Bổ sung quy tắc không chặn IP nội bộ và IP đối tác, thay vào đó phải leo thang.\n- Bổ sung yêu cầu xác minh sau khi xử lý."
+                  },
+                  {
+                    "doc_id": "SEC-09",
+                    "version": "1.0",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này quy định cách đội SOC phát hiện và xử lý tấn công password spraying vào các dịch vụ đăng nhập của UTE (SSH, VPN, cổng web nội bộ). Tài liệu bổ sung cho playbook brute-force SEC-02, vì password spraying có thể không vượt ngưỡng của SEC-02."
+                  },
+                  {
+                    "doc_id": "SEC-03",
+                    "version": "1.3",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này liệt kê các dải địa chỉ IP được coi là nội bộ hoặc đối tác của UTE. Đội SOC dùng danh mục này để quyết định một địa chỉ IP có được phép chặn hay không theo playbook brute-force SEC-02."
+                  }
+                ]
+              }
+
+[Bước 2]
+Thought     : We need thresholds: from SEC-02 threshold 5 fails in 5 min. Also need severity mapping
+              from SEC-04. Need to get severity levels. Search SEC-04 severity.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-04 severity brute-force",
+                "top_k": 5
+              }
+Observation : {
+                "results": [
+                  {
+                    "doc_id": "SEC-04",
+                    "version": "1.0",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này quy định cách xếp mức độ nghiêm trọng (severity) của một sự việc brute-force và thời gian chặn tương ứng. Tài liệu ban hành lần đầu cùng ngày với playbook SEC-02 phiên bản 2.0 và được dùng cùng playbook đó: SEC-02 quyết định có phải tấn công hay không, SEC-04 quyết định mức độ và thời gian chặn."
+                  },
+                  {
+                    "doc_id": "SEC-04",
+                    "version": "1.0",
+                    "text": "## 3. Ma trận severity\n| Mức | Điều kiện | Thời gian chặn | Tạo sự cố (incident) |\n|---|---|---|---|\n| Medium | 5 – 19 lần thất bại | 1 giờ (60 phút) | Bắt buộc, trạng thái `open` |\n| High | 20 – 49 lần thất bại | 24 giờ (1440 phút) | Bắt buộc, trạng thái `open` |\n| Critical | Từ 50 lần thất bại trở lên, hoặc có nhắm vào tài khoản quản trị | 7 ngày (10080 phút) | Bắt buộc, trạng thái `escalated` |"
+                  },
+                  {
+                    "doc_id": "SEC-04",
+                    "version": "1.0",
+                    "text": "## 2. Số lần thất bại dùng để xếp mức\nSố lần thất bại dùng để xếp mức là số lần đăng nhập thất bại lớn nhất của địa chỉ IP trong một cửa sổ 5 phút, đếm theo cách ở mục 3 của SEC-02. Nếu số này dưới 5 thì không phải tấn công brute-force và không xếp mức."
+                  },
+                  {
+                    "doc_id": "SEC-04",
+                    "version": "1.0",
+                    "text": "## 6. Áp dụng với IP nội bộ và đối tác\nIP nội bộ và đối tác (theo SEC-03) vẫn được xếp mức theo ma trận này để ghi vào sự cố, nhưng không áp dụng thời gian chặn. Các IP này không bị chặn mà phải leo thang theo SEC-05."
+                  },
+                  {
+                    "doc_id": "SEC-04",
+                    "version": "1.0",
+                    "text": "## 4. Tài khoản quản trị\nTài khoản quản trị gồm các username: `admin`, `root`, `administrator`. Chỉ cần một IP vượt ngưỡng của SEC-02 và có ít nhất một lần thất bại nhắm vào tài khoản quản trị thì xếp mức Critical, bất kể tổng số lần thất bại."
+                  }
+                ]
+              }
+
+[Bước 3]
+Thought     : We need count_failed_logins for IP.
+Action      : count_failed_logins
+Action Input: {
+                "ip": "203.0.113.200",
+                "lookback_minutes": 1440,
+                "window_minutes": 5
+              }
+Observation : {
+                "ip": "203.0.113.200",
+                "ip_type": "external",
+                "window_minutes": 5,
+                "total_failed": 4,
+                "max_failed_in_window": 2,
+                "max_distinct_users_in_window": 1,
+                "max_distinct_users_in_30min": 1,
+                "usernames": [
+                  "tuananh"
+                ],
+                "first_failed": "2026-10-01T07:42:00",
+                "last_failed": "2026-10-01T07:50:00",
+                "success_after_fail": [
+                  {
+                    "username": "tuananh",
+                    "fails_before": 4,
+                    "success_at": "2026-10-01T07:51:00"
+                  }
+                ]
+              }
+
+[Bước 4]
+Thought     : We have 4 total fails, max in window 2 (<5). So not brute-force. password spraying
+              requires distinct users >=? Need threshold from SEC-09 not fetched. Need search SEC-09
+              for thresholds.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-09 threshold distinct users",
+                "top_k": 5
+              }
+Observation : {
+                "results": [
+                  {
+                    "doc_id": "SEC-09",
+                    "version": "1.0",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này quy định cách đội SOC phát hiện và xử lý tấn công password spraying vào các dịch vụ đăng nhập của UTE (SSH, VPN, cổng web nội bộ). Tài liệu bổ sung cho playbook brute-force SEC-02, vì password spraying có thể không vượt ngưỡng của SEC-02."
+                  },
+                  {
+                    "doc_id": "SEC-09",
+                    "version": "1.0",
+                    "text": "## 4. Mức độ nghiêm trọng và thời gian chặn\n| Điều kiện | Mức | Thời gian chặn |\n|---|---|---|\n| Vượt ngưỡng ở mục 3 | High | 24 giờ (1440 phút) |\n| Vượt ngưỡng và có thử vào tài khoản quản trị (`admin`, `root`, `administrator`) | Critical | 7 ngày (10080 phút) |\n\nNếu cùng địa chỉ IP đó cũng vượt ngưỡng brute-force của SEC-02, xếp mức theo cả SEC-04 và bảng trên rồi chọn mức cao nhất."
+                  },
+                  {
+                    "doc_id": "SEC-09",
+                    "version": "1.0",
+                    "text": "## 3. Cách đếm và ngưỡng phát hiện\nSố liệu được đếm theo địa chỉ IP nguồn trong một cửa sổ 30 phút liên tục bất kỳ. Một địa chỉ IP bị coi là đang password spraying khi đăng nhập thất bại vào từ 10 username khác nhau trở lên trong cửa sổ 30 phút. Chỉ đếm số username khác nhau có ít nhất một lần thất bại, không đếm tổng số lần thất bại."
+                  },
+                  {
+                    "doc_id": "SEC-09",
+                    "version": "1.0",
+                    "text": "## 7. Xác minh sau khi xử lý\nSau khi chặn IP hoặc tạo sự cố, phải kiểm tra lại danh sách chặn hoặc sự cố vừa tạo để xác nhận thay đổi đã được ghi nhận. Sự cố phải ghi số username khác nhau bị thử, khung thời gian và mã tài liệu làm căn cứ."
+                  },
+                  {
+                    "doc_id": "SEC-09",
+                    "version": "1.0",
+                    "text": "## 6. Khi có lần đăng nhập thành công\nNếu trong các username bị thử có tài khoản đăng nhập thành công từ chính địa chỉ IP đó, tài khoản này có thể đã bị chiếm. Ngoài xử lý ở mục 5, phải xử lý tài khoản đó theo playbook tài khoản bị chiếm SEC-10."
+                  }
+                ]
+              }
+
+[Bước 5]
+Thought     : We have brute-force not met (max_failed_in_window=2 <5). password spraying threshold
+              10 distinct users not met (max_distinct_users_in_30min=1). But success_after_fail
+              exists -> possible account takeover. Need SEC-10.
+Action      : search_docs
+Action Input: {
+                "mode": "hybrid",
+                "only_active": true,
+                "query": "SEC-10",
+                "top_k": 5
+              }
+Observation : {
+                "results": [
+                  {
+                    "doc_id": "SEC-10",
+                    "version": "1.0",
+                    "text": "## 3. Mức độ nghiêm trọng\nMọi trường hợp tài khoản bị chiếm đều được xếp mức Critical, bất kể số lần thất bại trước đó."
+                  },
+                  {
+                    "doc_id": "SEC-10",
+                    "version": "1.0",
+                    "text": "## 1. Mục đích và phạm vi\nTài liệu này quy định cách đội SOC phát hiện và xử lý tài khoản có dấu hiệu bị chiếm, tức là kẻ tấn công đã đoán đúng mật khẩu và đăng nhập thành công. Đây là tình huống nghiêm trọng hơn brute-force hay password spraying, vì kẻ tấn công đã vào được hệ thống."
+                  },
+                  {
+                    "doc_id": "SEC-10",
+                    "version": "1.0",
+                    "text": "## 6. Xác minh sau khi xử lý\nSau khi khoá tài khoản, phải kiểm tra lại trạng thái tài khoản để xác nhận đã bị khoá. Sau khi chặn IP hoặc tạo sự cố, phải kiểm tra lại danh sách chặn hoặc sự cố vừa tạo. Sự cố phải ghi username bị chiếm, địa chỉ IP, số lần thất bại, thời điểm đăng nhập thành công và mã tài liệu làm căn cứ."
+                  },
+                  {
+                    "doc_id": "SEC-10",
+                    "version": "1.0",
+                    "text": "## 2. Dấu hiệu tài khoản bị chiếm\nMột tài khoản được coi là có dấu hiệu bị chiếm khi có từ 3 đến 4 lần đăng nhập thất bại liên tiếp trong 15 phút (chưa chạm ngưỡng khoá 5 lần của SEC-07), sau đó có một lần đăng nhập thành công vào chính tài khoản đó từ cùng địa chỉ IP với các lần thất bại.\n\nĐăng nhập thành công từ một IP khác với các lần thất bại không được coi là dấu hiệu bị chiếm theo tài liệu này."
+                  },
+                  {
+                    "doc_id": "SEC-10",
+                    "version": "1.0",
+                    "text": "## 4. Hành động xử lý với IP bên ngoài\nKhi địa chỉ IP là IP bên ngoài (theo SEC-03):\n- Khoá tài khoản bị chiếm. Tài khoản bị khoá cho đến khi trưởng ca SOC xác minh với chủ tài khoản và mở khoá thủ công, không tự mở sau 30 phút như quy định thông thường của SEC-07.\n- Chặn địa chỉ IP trong 7 ngày (10080 phút).\n- Tạo sự cố trạng thái `escalated` để trưởng ca xác minh và yêu cầu chủ tài khoản đổi mật khẩu."
+                  }
+                ]
+              }
+
+[Bước 6]
+Thought     : We have brute-force not met (max_failed_in_window=2 <5). Password spraying threshold
+              10 distinct users not met (max_distinct_users_in_30min=1). But success_after_fail
+              indicates possible account compromise. Need to check SEC-10 detection: need 3-4 fails
+              then success. Here fails_before=4 then success, meets 3-4 fails within 15 min? likely
+              yes. So account compromise detected. Need to process per SEC-10. IP is external. So
+              create incident severity Critical, status escalated, then block_ip severity Critical
+              duration 10080 minutes, then lock_account username tuananh indefinite. Need doc_ids
+              list include SEC-10, also include SEC-04? For severity we use SEC-10 severity
+              Critical. Also need include SEC-03 for IP type? Not required but include relevant
+              docs. We'll create incident first. Evidence string include details.
+Action      : create_incident
+Action Input: {
+                "doc_ids": [
+                  "SEC-10",
+                  "SEC-03"
+                ],
+                "evidence": "Success after 4 failed attempts for username tuananh from IP 203.0.113.200",
+                "ip": "203.0.113.200",
+                "severity": "Critical",
+                "status": "escalated",
+                "summary": "Account compromise detected from external IP"
+              }
+Observation : {
+                "status": "created",
+                "incident_id": "INC-0001",
+                "incident": {
+                  "incident_id": "INC-0001",
+                  "created_at": "2026-10-01T10:00:00",
+                  "ip": "203.0.113.200",
+                  "severity": "Critical",
+                  "status": "escalated",
+                  "summary": "Account compromise detected from external IP",
+                  "evidence": "Success after 4 failed attempts for username tuananh from IP 203.0.113.200",
+                  "doc_ids": [
+                    "SEC-10",
+                    "SEC-03"
+                  ]
+                }
+              }
+              Verify (get_incident): {
+                "count": 1,
+                "incidents": [
+                  {
+                    "incident_id": "INC-0001",
+                    "created_at": "2026-10-01T10:00:00",
+                    "ip": "203.0.113.200",
+                    "severity": "Critical",
+                    "status": "escalated",
+                    "summary": "Account compromise detected from external IP",
+                    "evidence": "Success after 4 failed attempts for username tuananh from IP 203.0.113.200",
+                    "doc_ids": [
+                      "SEC-10",
+                      "SEC-03"
+                    ]
+                  }
+                ]
+              }
+
+[Bước 7]
+Thought     : We need to block IP and lock account. Use block_ip then lock_account.
+Action      : block_ip
+Action Input: {
+                "doc_id": "SEC-10",
+                "ip": "203.0.113.200",
+                "severity": "Critical",
+                "duration_minutes": 10080,
+                "reason": "Account compromise detected"
+              }
+Observation : {
+                "status": "blocked",
+                "entry": {
+                  "ip": "203.0.113.200",
+                  "severity": "Critical",
+                  "duration_minutes": 10080,
+                  "blocked_at": "2026-10-01T10:00:00",
+                  "expires_at": "2026-10-08T10:00:00",
+                  "reason": "Account compromise detected",
+                  "doc_id": "SEC-10",
+                  "incident_id": null
+                }
+              }
+              Verify (get_blocklist): {
+                "count": 1,
+                "entries": [
+                  {
+                    "ip": "203.0.113.200",
+                    "severity": "Critical",
+                    "duration_minutes": 10080,
+                    "blocked_at": "2026-10-01T10:00:00",
+                    "expires_at": "2026-10-08T10:00:00",
+                    "reason": "Account compromise detected",
+                    "doc_id": "SEC-10",
+                    "incident_id": null
+                  }
+                ]
+              }
+              Lưu ý: lượt này bạn viết nhiều lệnh, chỉ lệnh đầu tiên (block_ip) được chạy. Các lệnh sau CHƯA chạy, hãy gọi lại từng lệnh ở lượt tiếp theo.
+
+[Bước 8]
+Thought     : We need to call lock_account now.
+Action      : lock_account
+Action Input: {
+                "username": "tuananh",
+                "reason": "Account compromise detected",
+                "duration_minutes": null
+              }
+Observation : Error executing tool lock_account: 1 validation error for lock_accountArguments
+              duration_minutes
+                Input should be a valid integer [type=int_type, input_value=None, input_type=NoneType]
+                  For further information visit https://errors.pydantic.dev/2.14/v/int_type
+
+[Bước 9]
+Thought     : We need to omit duration_minutes.
+Action      : lock_account
+Action Input: {
+                "username": "tuananh",
+                "reason": "Account compromise detected"
+              }
+Observation : {
+                "status": "locked",
+                "account": {
+                  "username": "tuananh",
+                  "is_admin": false,
+                  "locked": true,
+                  "locked_until": null,
+                  "reason": "Account compromise detected"
+                }
+              }
+              Verify (get_account_status): {
+                "username": "tuananh",
+                "is_admin": false,
+                "locked": true,
+                "locked_until": null,
+                "reason": "Account compromise detected"
+              }
+
+[Bước 10]
+Thought     : (model không ghi suy nghĩ)
+
+----------------------------------------------------------------------------------------------------
+Final Answer: IP 203.0.113.200 đã bị chặn 7 ngày (Critical) và tài khoản tuananh đã được khóa.
+              Incident INC-0001 được tạo với mức độ Critical và trạng thái escalated. (Sources:
+              SEC-02, SEC-04, SEC-09, SEC-10, SEC-03, SEC-05)
+(10 bước, 46787 token)
+USAGE: 10 lần gọi LLM, prompt 45813 + completion 974 token, prompt lớn nhất 5925
